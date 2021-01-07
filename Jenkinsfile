@@ -6,6 +6,7 @@ def availableRegions = [ "us-ashburn-1", "ap-chuncheon-1", "ap-hyderabad-1", "ap
                           "ap-tokyo-1", "ca-montreal-1", "ca-toronto-1", "eu-amsterdam-1", "eu-frankfurt-1", "eu-zurich-1", "me-jeddah-1",
                           "sa-saopaulo-1", "uk-london-1", "us-phoenix-1" ]
 Collections.shuffle(availableRegions)
+def agentLabel = env.JOB_NAME.contains('kind') || env.JOB_NAME.contains('verrazzano-acceptance-test-suite') ? "VM.Standard2.8" : ""
 
 pipeline {
     options {
@@ -18,6 +19,7 @@ pipeline {
             args "${RUNNER_DOCKER_ARGS}"
             registryUrl "${RUNNER_DOCKER_REGISTRY_URL}"
             registryCredentialsId 'ocir-pull-and-push-account'
+            label "${agentLabel}"
         }
     }
 
@@ -51,6 +53,9 @@ pipeline {
     }
 
     environment {
+        CLUSTER_NAME = 'v8o-kind'
+        POST_DUMP_FAILED_FILE = "${WORKSPACE}/post_dump_failed_file.tmp"
+
         DOCKER_CI_IMAGE_NAME = 'verrazzano-platform-operator-jenkins'
         DOCKER_PUBLISH_IMAGE_NAME = 'verrazzano-platform-operator'
         DOCKER_IMAGE_NAME = "${env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'master' ? env.DOCKER_PUBLISH_IMAGE_NAME : env.DOCKER_CI_IMAGE_NAME}"
@@ -238,6 +243,7 @@ pipeline {
             }
         }
 
+        /**
         stage('Kick off KinD Acceptance tests') {
             when {
                 allOf {
@@ -261,6 +267,16 @@ pipeline {
                                      string(name: 'INSTALL_PROFILE', value: 'dev')],
                         wait: true,
                         propagate: true
+            }
+        }
+        **/
+
+        stage('install-kind') {
+            steps {
+                sh """
+                    cd ${GO_REPO_PATH}/verrazzano
+                    ./tests/e2e/config/scripts/install_kind.sh
+                """
             }
         }
 
@@ -289,6 +305,13 @@ pipeline {
     post {
         always {
             deleteDir()
+            sh """
+                ${WORKSPACE}/verrazzano/tests/e2e/config/scripts/delete-kind-cluster.sh
+                if [ -f ${POST_DUMP_FAILED_FILE} ]; then
+                  echo "Failures seen during dumping of artifacts, treat post as failed"
+                  exit 1
+                fi
+            """
         }
         failure {
             mail to: "${env.BUILD_NOTIFICATION_TO_EMAIL}", from: "${env.BUILD_NOTIFICATION_FROM_EMAIL}",
