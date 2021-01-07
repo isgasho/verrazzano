@@ -205,7 +205,7 @@ else
 endif
 
 	echo 'Run tests...'
-	ginkgo -v --keepGoing -cover operator/test/integ/... || IGNORE=FAILURE
+	KUBECONFIG=${KUBECONFIG} ginkgo -v --keepGoing -cover operator/test/integ/... || IGNORE=FAILURE
 
 .PHONY: create-cluster
 create-cluster:
