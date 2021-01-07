@@ -204,8 +204,8 @@ else
 	kubectl apply -f ${BUILD-DEPLOY}/operator.yaml
 endif
 
-	echo 'Run tests...'
-	KUBECONFIG=${KUBECONFIG} ginkgo -v --keepGoing -cover operator/test/integ/... || IGNORE=FAILURE
+	echo 'Run tests... ${KUBECONFIG}'
+	ginkgo -v --keepGoing -cover operator/test/integ/... || IGNORE=FAILURE
 
 .PHONY: create-cluster
 create-cluster:
