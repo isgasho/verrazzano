@@ -26,7 +26,7 @@ cd $ACC_TESTS_ROOT
 
 echo "${OCR_CREDS_PSW}" | docker login -u ${OCR_CREDS_USR} ${OCR_REPO} --password-stdin
 
-echo "${DOCKER_CREDS_PSW}" | docker login -u ${DOCKER_CREDS_USR} ghcr.io --password-stdin
+echo "${DOCKER_CREDS_PSW}" | docker login -u ${DOCKER_CREDS_USR} ${DOCKER_REPO} --password-stdin
 
 kind delete cluster --name="${CLUSTER_NAME}" --kubeconfig "${KUBECONFIG}"
 
