@@ -178,7 +178,6 @@ pipeline {
             steps {
                 sh """
                     cd ${GO_REPO_PATH}/verrazzano
-                    make unit-test
                     make -B coverage
                     cp coverage.html ${WORKSPACE}
                     cp coverage.xml ${WORKSPACE}
@@ -248,34 +247,6 @@ pipeline {
             }
         }
 
-        /**
-        stage('Kick off KinD Acceptance tests') {
-            when {
-                allOf {
-                    not { buildingTag() }
-                    anyOf {
-                        branch 'master';
-                        branch 'develop';
-                        expression { return params.RUN_ACCEPTANCE_TESTS == true }
-                    }
-                }
-            }
-            environment {
-                FULL_IMAGE_NAME = "${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
-            }
-            steps {
-                build job: "verrazzano-kind-acceptance-tests/${env.BRANCH_NAME.replace("/", "%2F")}",
-                        parameters: [string(name: 'VERRAZZANO_BRANCH', value: env.BRANCH_NAME),
-                                     string(name: 'ACCEPTANCE_TESTS_BRANCH', value: params.ACCEPTANCE_TESTS_BRANCH),
-                                     string(name: 'VERRAZZANO_OPERATOR_IMAGE', value: FULL_IMAGE_NAME),
-                                     string(name: 'TEST_ENV', value: 'kind'),
-                                     string(name: 'INSTALL_PROFILE', value: 'dev')],
-                        wait: true,
-                        propagate: true
-            }
-        }
-        **/
-
         stage('install-kind') {
             steps {
                 sh """
@@ -325,7 +296,7 @@ pipeline {
                     echo "Waiting for Operator to be ready"
                     kubectl -n verrazzano-install rollout status deployment/verrazzano-platform-operator
 
-                    echo "Installing Verrazzano on ${TEST_ENV}"
+                    echo "Installing Verrazzano on Kind"
                     kubectl apply -f ${INSTALL_CONFIG_FILE_KIND}
 
                     # wait for Verrazzano install to complete
