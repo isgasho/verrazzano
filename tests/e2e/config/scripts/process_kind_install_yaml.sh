@@ -5,7 +5,7 @@
 #
 
 INSTALL_CONFIG_TO_EDIT=$1
-echo "Editing install config file for nodeport ${INSTALL_CONFIG_TO_EDIT}"
+echo "Editing install config file for kind ${INSTALL_CONFIG_TO_EDIT}"
 yq -i eval ".spec.environmentName = \"${VZ_ENVIRONMENT_NAME}\"" ${INSTALL_CONFIG_TO_EDIT}
 yq -i eval ".spec.profile = \"${INSTALL_PROFILE}\"" ${INSTALL_CONFIG_TO_EDIT}
 if [ $INSTALL_PROFILE == "dev" ]; then

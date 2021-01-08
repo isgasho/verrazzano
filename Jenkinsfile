@@ -60,6 +60,7 @@ pipeline {
         OCR_REPO = 'container-registry.oracle.com'
         IMAGE_PULL_SECRET = 'verrazzano-container-registry'
         INSTALL_CONFIG_FILE_KIND = "./tests/e2e/config/scripts/install-verrazzano-kind.yaml"
+        INSTALL_PROFILE = "dev"
 
         DOCKER_CI_IMAGE_NAME = 'verrazzano-platform-operator-jenkins'
         DOCKER_PUBLISH_IMAGE_NAME = 'verrazzano-platform-operator'
