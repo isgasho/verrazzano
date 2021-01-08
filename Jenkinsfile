@@ -302,24 +302,19 @@ pipeline {
                 sh """
                     cd ${GO_REPO_PATH}/verrazzano
                     kubectl apply -f operator/deploy/operator.yaml
+                    
                     # make sure ns exists
                     ./tests/e2e/config/scripts/check_verrazzano_ns_exists.sh verrazzano-install
+                    
                     # create secret in verrazzano-install ns
                     ./tests/e2e/config/scripts/create-image-pull-secret.sh "${IMAGE_PULL_SECRET}" "${DOCKER_REPO}" "${DOCKER_CREDS_USR}" "${DOCKER_CREDS_PSW}" "verrazzano-install"
-                """
-            }
-        }
 
-        stage("setup-kind-config") {
-            steps {
-                script {
-                    sh """
-                        echo "Installing yq"
-                        GO111MODULE=on go get github.com/mikefarah/yq/v4
-                        export PATH=${HOME}/go/bin:${PATH}
-                        ./tests/e2e/config/scripts/process_kind_install_yaml.sh ${INSTALL_CONFIG_FILE_KIND}
-                    """
-                }
+                    # Configure the custom resource to install verrazzano on Kind
+                    echo "Installing yq"
+                    GO111MODULE=on go get github.com/mikefarah/yq/v4
+                    export PATH=${HOME}/go/bin:${PATH}
+                    ./tests/e2e/config/scripts/process_kind_install_yaml.sh ${INSTALL_CONFIG_FILE_KIND}
+                """
             }
         }
 
