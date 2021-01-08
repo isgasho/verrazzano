@@ -58,6 +58,7 @@ pipeline {
         KUBECONFIG = "${WORKSPACE}/test_kubeconfig"
         OCR_CREDS = credentials('ocr-pull-and-push-account')
         OCR_REPO = 'container-registry.oracle.com'
+        IMAGE_PULL_SECRET = 'verrazzano-container-registry'
 
         DOCKER_CI_IMAGE_NAME = 'verrazzano-platform-operator-jenkins'
         DOCKER_PUBLISH_IMAGE_NAME = 'verrazzano-platform-operator'
