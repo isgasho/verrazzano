@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2021, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 #
 
@@ -44,13 +44,3 @@ cat ${KUBECONFIG} | grep server
 # and update the kubeconfig file to point to that address, instead of localhost
 sed -i -e "s|127.0.0.1.*|`docker inspect ${CLUSTER_NAME}-control-plane | jq '.[].NetworkSettings.IPAddress' | sed 's/"//g'`:6443|g" ${KUBECONFIG}
 cat ${KUBECONFIG} | grep server
-
-# Hack
-# OCIR images don't work with KIND.
-# Coherence image doesn't get pulled correctly in KIND.
-docker pull phx.ocir.io/stevengreenberginc/rdonat/todo:5
-docker pull phx.ocir.io/stevengreenberginc/testimage/spring-boot-verrazzano:0.0.3
-docker pull container-registry.oracle.com/middleware/coherence:12.2.1.4.0
-kind load docker-image --name ${CLUSTER_NAME} phx.ocir.io/stevengreenberginc/rdonat/todo:5
-kind load docker-image --name ${CLUSTER_NAME} phx.ocir.io/stevengreenberginc/testimage/spring-boot-verrazzano:0.0.3
-kind load docker-image --name ${CLUSTER_NAME} container-registry.oracle.com/middleware/coherence:12.2.1.4.0
