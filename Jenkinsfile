@@ -294,8 +294,8 @@ pipeline {
         stage("install-verrazzano") {
             steps {
                 sh """
-                    cd ${GO_REPO_PATH}/verrazzano
                     echo "Waiting for Operator to be ready"
+                    cd ${GO_REPO_PATH}/verrazzano
                     kubectl -n verrazzano-install rollout status deployment/verrazzano-platform-operator
 
                     echo "Installing Verrazzano on Kind"
@@ -303,16 +303,6 @@ pipeline {
 
                     # wait for Verrazzano install to complete
                     ./tests/e2e/config/scripts/wait-for-verrazzano-install.sh
-
-                    # Create acceptance test configuration file
-                    # ${WORKSPACE}/verrazzano-acceptance-test-suite/scripts/common-test-setup-script.sh "${WORKSPACE}" "${TEST_CONFIG_FILE}" "${env.DOCKER_REPO}" "${KUBECONFIG}" "${OCR_CREDS_USR}" "${OCR_CREDS_PSW}" "${VZ_ENVIRONMENT_NAME}"
-
-                    # edit DNS info in the test config file
-                    # ${WORKSPACE}/verrazzano-acceptance-test-suite/scripts/get_node_ip.sh ${CLUSTER_NAME} ${TEST_CONFIG_FILE}
-
-                    echo "----------Test config file:-------------"
-                    # cat ${TEST_CONFIG_FILE}
-                    echo "----------------------------------------"
                 """
             }
             post {
