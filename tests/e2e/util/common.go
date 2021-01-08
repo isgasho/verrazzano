@@ -5,16 +5,16 @@ import (
 	"github.com/onsi/ginkgo"
 	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"os"
 	"path/filepath"
 	"strings"
-	restclient "k8s.io/client-go/rest"
-
 )
 
-func GetKubeConfig() (*restclient.Config) {
+// GetKubeConfig will get the kubeconfig from the environment variable KUBECONFIG, if set, or else from $HOME/.kube/config
+func GetKubeConfig() *restclient.Config {
 	kubeconfig := ""
 	// if the KUBECONFIG environment variable is set, use that
 	kubeconfigEnvVar := os.Getenv("KUBECONFIG")
@@ -45,7 +45,8 @@ func DoesCRDExist(crdName string) bool {
 		ginkgo.Fail("Could not get apix client")
 	}
 
-	crds, err := apixClient.CustomResourceDefinitions().List(context.TODO(), metav1.ListOptions{})
+	// ignoring error for now
+	crds, _ := apixClient.CustomResourceDefinitions().List(context.TODO(), metav1.ListOptions{})
 
 	for i := range crds.Items {
 		if strings.Compare(crds.Items[i].ObjectMeta.Name, crdName) == 0 {
