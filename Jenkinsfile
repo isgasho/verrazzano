@@ -274,7 +274,19 @@ pipeline {
             steps {
                 sh """
                     cd ${GO_REPO_PATH}/verrazzano
-                    kubectl apply -f operator/deploy/operator.yaml
+
+                    # Configure the deployment file to use an image pull secret for branches that have private images
+                    if [ "${env.BRANCH_NAME} == "master" ] || [ ${env.BRANCH_NAME} == "develop" ]; then
+                        echo "Using operator.yaml from Verrazzano repo"
+                        cp operator/deploy/operator.yaml /tmp/operator.yaml
+                    else
+                        echo "Generating operator.yaml based on image name provided: ${DOCKER_IMAGE_NAME}"
+                        ./tests/e2e/config/scripts/process_operator_yaml.sh . "${DOCKER_IMAGE_NAME}"
+                    fi
+
+                    # Install the verrazzano-platform-operator
+                    cat /tmp/operator.yaml
+                    kubectl apply -f /tmp/operator.yaml
                     
                     # make sure ns exists
                     ./tests/e2e/config/scripts/check_verrazzano_ns_exists.sh verrazzano-install
