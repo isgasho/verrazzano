@@ -44,3 +44,9 @@ cat ${KUBECONFIG} | grep server
 # and update the kubeconfig file to point to that address, instead of localhost
 sed -i -e "s|127.0.0.1.*|`docker inspect ${CLUSTER_NAME}-control-plane | jq '.[].NetworkSettings.IPAddress' | sed 's/"//g'`:6443|g" ${KUBECONFIG}
 cat ${KUBECONFIG} | grep server
+
+# Hack
+# OCIR images don't work with KIND.
+# Coherence image doesn't get pulled correctly in KIND.
+docker pull container-registry.oracle.com/middleware/coherence:12.2.1.4.0
+kind load docker-image --name ${CLUSTER_NAME} container-registry.oracle.com/middleware/coherence:12.2.1.4.0
