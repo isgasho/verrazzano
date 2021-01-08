@@ -61,6 +61,7 @@ pipeline {
         IMAGE_PULL_SECRET = 'verrazzano-container-registry'
         INSTALL_CONFIG_FILE_KIND = "./tests/e2e/config/scripts/install-verrazzano-kind.yaml"
         INSTALL_PROFILE = "dev"
+        VZ_ENVIRONMENT_NAME = "default"
 
         DOCKER_CI_IMAGE_NAME = 'verrazzano-platform-operator-jenkins'
         DOCKER_PUBLISH_IMAGE_NAME = 'verrazzano-platform-operator'
@@ -325,6 +326,21 @@ pipeline {
                         echo "Verrazzano Install pod description dumped to verrazzano-install-job-pod.out"
                         echo "------------------------------------------"
                     """
+                }
+            }
+        }
+
+        stage('acceptance-tests') {
+            parallel {
+                stage('verify-install') {
+                    steps {
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                            sh """
+                                cd ${GO_REPO_PATH}/verrazzano/tests/e2e
+                                ginkgo -p --randomizeAllSpecs -v -keepGoing --noColor verify-install/...
+                            """
+                        }
+                    }
                 }
             }
         }
