@@ -59,6 +59,7 @@ pipeline {
         OCR_CREDS = credentials('ocr-pull-and-push-account')
         OCR_REPO = 'container-registry.oracle.com'
         IMAGE_PULL_SECRET = 'verrazzano-container-registry'
+        INSTALL_CONFIG_FILE_KIND = "./tests/e2e/config/scripts/install-verrazzano-nodeport.yaml"
 
         DOCKER_CI_IMAGE_NAME = 'verrazzano-platform-operator-jenkins'
         DOCKER_PUBLISH_IMAGE_NAME = 'verrazzano-platform-operator'
@@ -306,6 +307,57 @@ pipeline {
                     # create secret in verrazzano-install ns
                     ./tests/e2e/config/scripts/create-image-pull-secret.sh "${IMAGE_PULL_SECRET}" "${DOCKER_REPO}" "${DOCKER_CREDS_USR}" "${DOCKER_CREDS_PSW}" "verrazzano-install"
                 """
+            }
+        }
+
+        stage("setup-kind-config") {
+            steps {
+                script {
+                    sh """
+                        echo "Installing yq"
+                        GO111MODULE=on go get github.com/mikefarah/yq/v4
+                        export PATH=${HOME}/go/bin:${PATH}
+                        ./tests/e2e/config/scripts/process_kind_install_yaml.sh ${INSTALL_CONFIG_FILE_KIND}
+                    """
+                }
+            }
+        }
+
+        stage("install-verrazzano") {
+            steps {
+                sh """
+                    echo "Waiting for Operator to be ready"
+                    kubectl -n verrazzano-install rollout status deployment/verrazzano-platform-operator
+
+                    echo "Installing Verrazzano on ${TEST_ENV}"
+                    kubectl apply -f ${INSTALL_CONFIG_FILE_KIND}
+
+                    # wait for Verrazzano install to complete
+                    ./tests/e2e/config/scripts/wait-for-verrazzano-install.sh
+
+                    # Create acceptance test configuration file
+                    # ${WORKSPACE}/verrazzano-acceptance-test-suite/scripts/common-test-setup-script.sh "${WORKSPACE}" "${TEST_CONFIG_FILE}" "${env.DOCKER_REPO}" "${KUBECONFIG}" "${OCR_CREDS_USR}" "${OCR_CREDS_PSW}" "${VZ_ENVIRONMENT_NAME}"
+
+                    # edit DNS info in the test config file
+                    # ${WORKSPACE}/verrazzano-acceptance-test-suite/scripts/get_node_ip.sh ${CLUSTER_NAME} ${TEST_CONFIG_FILE}
+
+                    echo "----------Test config file:-------------"
+                    # cat ${TEST_CONFIG_FILE}
+                    echo "----------------------------------------"
+                """
+            }
+            post {
+                always {
+                    sh """
+                        ## dump out install logs
+                        mkdir -p ${WORKSPACE}/verrazzano/operator/scripts/install/build/logs
+                        kubectl logs --selector=job-name=verrazzano-install-my-verrazzano > ${WORKSPACE}/verrazzano/operator/scripts/install/build/logs/verrazzano-install.log --tail -1
+                        kubectl describe pod --selector=job-name=verrazzano-install-my-verrazzano > ${WORKSPACE}/verrazzano/operator/scripts/install/build/logs/verrazzano-install-job-pod.out
+                        echo "Verrazzano Installation logs dumped to verrazzano-install.log"
+                        echo "Verrazzano Install pod description dumped to verrazzano-install-job-pod.out"
+                        echo "------------------------------------------"
+                    """
+                }
             }
         }
 
