@@ -321,6 +321,7 @@ pipeline {
         stage("install-verrazzano") {
             steps {
                 sh """
+                    cd ${GO_REPO_PATH}/verrazzano
                     echo "Waiting for Operator to be ready"
                     kubectl -n verrazzano-install rollout status deployment/verrazzano-platform-operator
 
