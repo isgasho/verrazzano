@@ -16,7 +16,7 @@ var _ = Describe("Verrazzano", func() {
 		func(name string) {
 			Expect(DoesCRDExist(name)).To(BeTrue())
 		},
-		Entry("verrazzanos should exist in cluster", "vverrazzanos.install.verrazzano.io"),
+		Entry("verrazzanos should exist in cluster", "verrazzanos.install.verrazzano.io"),
 	)
 
 })
