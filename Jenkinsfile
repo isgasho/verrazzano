@@ -246,7 +246,7 @@ pipeline {
                     cd ${GO_REPO_PATH}/verrazzano
 
                     # Configure the deployment file to use an image pull secret for branches that have private images
-                    if [ "${env.BRANCH_NAME} == "master" ] || [ ${env.BRANCH_NAME} == "develop" ]; then
+                    if [ "${env.BRANCH_NAME}" == "master" ] || [ "${env.BRANCH_NAME}" == "develop" ]; then
                         echo "Using operator.yaml from Verrazzano repo"
                         cp operator/deploy/operator.yaml /tmp/operator.yaml
                     else
