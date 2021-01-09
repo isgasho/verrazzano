@@ -121,42 +121,12 @@ pipeline {
             }
         }
 
-        stage('gofmt Check') {
+        stage('Code Checks') {
             when { not { buildingTag() } }
             steps {
                 sh """
                     cd ${GO_REPO_PATH}/verrazzano
-                    make go-fmt
-                """
-            }
-        }
-
-        stage('go vet Check') {
-            when { not { buildingTag() } }
-            steps {
-                sh """
-                    cd ${GO_REPO_PATH}/verrazzano
-                    make go-vet
-                """
-            }
-        }
-
-        stage('golint Check') {
-            when { not { buildingTag() } }
-            steps {
-                sh """
-                    cd ${GO_REPO_PATH}/verrazzano
-                    make go-lint
-                """
-            }
-        }
-
-        stage('ineffassign Check') {
-            when { not { buildingTag() } }
-            steps {
-                sh """
-                    cd ${GO_REPO_PATH}/verrazzano
-                    make go-ineffassign
+                    make check
                 """
             }
         }
