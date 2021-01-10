@@ -203,9 +203,14 @@ else
 	cat operator/config/crd/bases/install.verrazzano.io_verrazzanos.yaml >> ${BUILD-DEPLOY}/operator.yaml
 	kubectl apply -f ${BUILD-DEPLOY}/operator.yaml
 endif
+	${MAKE} integ-test-run
 
+
+.PHONY: integ-test-run
+integ-test-run:
 	echo 'Run tests... ${KUBECONFIG}'
 	ginkgo -v --keepGoing -cover operator/test/integ/... || IGNORE=FAILURE
+
 
 .PHONY: create-cluster
 create-cluster:

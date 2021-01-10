@@ -114,7 +114,7 @@ pipeline {
 
         stage('Parallel Setup') {
             parallel('Build') {
-                stage('Build & Test Image') {
+                stage('Platform Operator Image') {
                     stages {
                         stage('Build') {
                             when { not { buildingTag() } }
@@ -149,25 +149,9 @@ pipeline {
                                 """
                             }
                         }
-                        stage('Integration Tests') {
-                            when { not { buildingTag() } }
-                            steps {
-                                sh """
-                                    cd ${GO_REPO_PATH}/verrazzano
-                                    make integ-test DOCKER_REPO=${env.DOCKER_REPO} DOCKER_NAMESPACE=${env.DOCKER_NAMESPACE} DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME} DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}
-                                    operator/build/scripts/copy-junit-output.sh ${WORKSPACE}
-                                """
-                            }
-                            post {
-                                always {
-                                    archiveArtifacts artifacts: '**/coverage.html', allowEmptyArchive: true
-                                    junit testResults: '**/*test-result.xml', allowEmptyResults: true
-                                }
-                            }
-                        }
                     }
                 }
-                stage('Code Checks & Prepare Test Environment') {
+                stage('Platform Operator Code Checks') {
                     stages {
                         stage('Code Checks') {
                             when { not { buildingTag() } }
@@ -222,28 +206,53 @@ pipeline {
                         }
                     }
                 }
+                stage('Test Suite Setup') {
+                    stages {
+                        stage('install-kind') {
+                            steps {
+                                sh """
+                                    cd ${GO_REPO_PATH}/verrazzano
+                                    make create-cluster
+                                    
+                                    # Hack
+                                    # OCIR images don't work with KIND.
+                                    # Coherence image doesn't get pulled correctly in KIND.
+                                    docker pull container-registry.oracle.com/middleware/coherence:12.2.1.4.0
+                                    kind load docker-image --name ${CLUSTER_NAME} container-registry.oracle.com/middleware/coherence:12.2.1.4.0
+                                """
+                            }
+                        }
+                        stage("create-image-pull-secrets") {
+                            steps {
+                                sh """
+                                    # Create image pull secret for Verrazzano docker images
+                                    cd ${GO_REPO_PATH}/verrazzano
+                                    ./tests/e2e/config/scripts/create-image-pull-secret.sh "${IMAGE_PULL_SECRET}" "${DOCKER_REPO}" "${DOCKER_CREDS_USR}" "${DOCKER_CREDS_PSW}"
+                                    ./tests/e2e/config/scripts/create-image-pull-secret.sh github-packages "${DOCKER_REPO}" "${DOCKER_CREDS_USR}" "${DOCKER_CREDS_PSW}"
+                                    ./tests/e2e/config/scripts/create-image-pull-secret.sh ocr "${OCR_REPO}" "${OCR_CREDS_USR}" "${OCR_CREDS_PSW}"
+                                """
+                            }
+                        }
+
+                    }
+                }
             }
         }
 
-
-        stage('install-kind') {
+        stage('Integration Tests') {
+            when { not { buildingTag() } }
             steps {
                 sh """
                     cd ${GO_REPO_PATH}/verrazzano
-                    ./tests/e2e/config/scripts/install_kind.sh
+                    make integ-test-run DOCKER_REPO=${env.DOCKER_REPO} DOCKER_NAMESPACE=${env.DOCKER_NAMESPACE} DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME} DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}
+                    operator/build/scripts/copy-junit-output.sh ${WORKSPACE}
                 """
             }
-        }
-
-        stage("create-image-pull-secrets") {
-            steps {
-                sh """
-                    # Create image pull secret for Verrazzano docker images
-                    cd ${GO_REPO_PATH}/verrazzano
-                    ./tests/e2e/config/scripts/create-image-pull-secret.sh "${IMAGE_PULL_SECRET}" "${DOCKER_REPO}" "${DOCKER_CREDS_USR}" "${DOCKER_CREDS_PSW}"
-                    ./tests/e2e/config/scripts/create-image-pull-secret.sh github-packages "${DOCKER_REPO}" "${DOCKER_CREDS_USR}" "${DOCKER_CREDS_PSW}"
-                    ./tests/e2e/config/scripts/create-image-pull-secret.sh ocr "${OCR_REPO}" "${OCR_CREDS_USR}" "${OCR_CREDS_PSW}"
-                """
+            post {
+                always {
+                    archiveArtifacts artifacts: '**/coverage.html', allowEmptyArchive: true
+                    junit testResults: '**/*test-result.xml', allowEmptyResults: true
+                }
             }
         }
 
