@@ -240,23 +240,6 @@ pipeline {
             }
         }
 
-        stage('Integration Tests') {
-            when { not { buildingTag() } }
-            steps {
-                sh """
-                    cd ${GO_REPO_PATH}/verrazzano
-                    make integ-test-run DOCKER_REPO=${env.DOCKER_REPO} DOCKER_NAMESPACE=${env.DOCKER_NAMESPACE} DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME} DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}
-                    operator/build/scripts/copy-junit-output.sh ${WORKSPACE}
-                """
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: '**/coverage.html', allowEmptyArchive: true
-                    junit testResults: '**/*test-result.xml', allowEmptyResults: true
-                }
-            }
-        }
-
         stage("install-platform-operator") {
             steps {
                 sh """
@@ -287,6 +270,23 @@ pipeline {
                     export PATH=${HOME}/go/bin:${PATH}
                     ./tests/e2e/config/scripts/process_kind_install_yaml.sh ${INSTALL_CONFIG_FILE_KIND}
                 """
+            }
+        }
+
+        stage('Integration Tests') {
+            when { not { buildingTag() } }
+            steps {
+                sh """
+                    cd ${GO_REPO_PATH}/verrazzano
+                    make integ-test-run DOCKER_REPO=${env.DOCKER_REPO} DOCKER_NAMESPACE=${env.DOCKER_NAMESPACE} DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME} DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}
+                    operator/build/scripts/copy-junit-output.sh ${WORKSPACE}
+                """
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: '**/coverage.html', allowEmptyArchive: true
+                    junit testResults: '**/*test-result.xml', allowEmptyResults: true
+                }
             }
         }
 

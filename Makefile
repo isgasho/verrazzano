@@ -194,10 +194,8 @@ integ-test: create-cluster
 
 .PHONY: integ-test-run
 integ-test-run:
+ifndef JENKINS_URL
 	echo 'Deploy verrazzano platform operator ...'
-ifdef JENKINS_URL
-	kubectl apply -f operator/deploy/operator.yaml
-else
 	kind load docker-image --name ${CLUSTER_NAME} ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 	mkdir -p build/deploy
 	cat operator/config/deploy/verrazzano-platform-operator.yaml | sed -e "s|IMAGE_NAME|${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}|g" > ${BUILD-DEPLOY}/operator.yaml
