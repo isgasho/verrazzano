@@ -112,112 +112,116 @@ pipeline {
             }
         }
 
-        parallel('Build') {
-            stage('Build & Test Image') {
-                stage('Build') {
-                    when { not { buildingTag() } }
-                    steps {
-                        sh """
+        stage('Parallel Setup') {
+            parallel('Build') {
+                stage('Build & Test Image') {
+                    stage('Build') {
+                        when { not { buildingTag() } }
+                        steps {
+                            sh """
                     cd ${GO_REPO_PATH}/verrazzano
                     make docker-push DOCKER_REPO=${env.DOCKER_REPO} DOCKER_NAMESPACE=${env.DOCKER_NAMESPACE} DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME} DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG} CREATE_LATEST_TAG=${CREATE_LATEST_TAG}
                    """
-                    }
-                }
-                stage('Scan Image') {
-                    when { not { buildingTag() } }
-                    steps {
-                        script {
-                            clairScanTemp "${env.DOCKER_REPO}/${env.DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
                         }
                     }
-                    post {
-                        always {
-                            archiveArtifacts artifacts: '**/scanning-report.json', allowEmptyArchive: true
+                    stage('Scan Image') {
+                        when { not { buildingTag() } }
+                        steps {
+                            script {
+                                clairScanTemp "${env.DOCKER_REPO}/${env.DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                            }
+                        }
+                        post {
+                            always {
+                                archiveArtifacts artifacts: '**/scanning-report.json', allowEmptyArchive: true
+                            }
                         }
                     }
-                }
-                stage('Generate operator.yaml') {
-                    when { not { buildingTag() } }
-                    steps {
-                        sh """
+                    stage('Generate operator.yaml') {
+                        when { not { buildingTag() } }
+                        steps {
+                            sh """
                     cd ${GO_REPO_PATH}/verrazzano/operator
                     cat config/deploy/verrazzano-platform-operator.yaml | sed -e "s|IMAGE_NAME|${env.DOCKER_REPO}/${env.DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}|g" > deploy/operator.yaml
                     cat config/crd/bases/install.verrazzano.io_verrazzanos.yaml >> deploy/operator.yaml
                     cat deploy/operator.yaml
                    """
+                        }
                     }
-                }
-                stage('Integration Tests') {
-                    when { not { buildingTag() } }
-                    steps {
-                        sh """
+                    stage('Integration Tests') {
+                        when { not { buildingTag() } }
+                        steps {
+                            sh """
                     cd ${GO_REPO_PATH}/verrazzano
                     make integ-test DOCKER_REPO=${env.DOCKER_REPO} DOCKER_NAMESPACE=${env.DOCKER_NAMESPACE} DOCKER_IMAGE_NAME=${DOCKER_IMAGE_NAME} DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}
                     operator/build/scripts/copy-junit-output.sh ${WORKSPACE}
                 """
-                    }
-                    post {
-                        always {
-                            archiveArtifacts artifacts: '**/coverage.html', allowEmptyArchive: true
-                            junit testResults: '**/*test-result.xml', allowEmptyResults: true
+                        }
+                        post {
+                            always {
+                                archiveArtifacts artifacts: '**/coverage.html', allowEmptyArchive: true
+                                junit testResults: '**/*test-result.xml', allowEmptyResults: true
+                            }
                         }
                     }
                 }
-            }
-            stage('Code Checks & Prepare Test Environment') {
-                stage('Code Checks') {
-                    when { not { buildingTag() } }
-                    steps {
-                        sh """
+                stage('Code Checks & Prepare Test Environment') {
+                    stage('Code Checks') {
+                        when { not { buildingTag() } }
+                        steps {
+                            sh """
                     cd ${GO_REPO_PATH}/verrazzano
                     make check
                 """
+                        }
                     }
-                }
-                stage('Third Party License Check') {
-                    when { not { buildingTag() } }
-                    steps {
-                        thirdpartyCheck()
+                    stage('Third Party License Check') {
+                        when { not { buildingTag() } }
+                        steps {
+                            thirdpartyCheck()
+                        }
                     }
-                }
-                stage('Copyright Compliance Check') {
-                    when { not { buildingTag() } }
-                    steps {
-                        copyrightScan "${WORKSPACE}"
+                    stage('Copyright Compliance Check') {
+                        when { not { buildingTag() } }
+                        steps {
+                            copyrightScan "${WORKSPACE}"
+                        }
                     }
-                }
-                stage('Unit Tests') {
-                    when { not { buildingTag() } }
-                    steps {
-                        sh """
+                    stage('Unit Tests') {
+                        when { not { buildingTag() } }
+                        steps {
+                            sh """
                     cd ${GO_REPO_PATH}/verrazzano
                     make -B coverage
                     cp coverage.html ${WORKSPACE}
                     cp coverage.xml ${WORKSPACE}
                     operator/build/scripts/copy-junit-output.sh ${WORKSPACE}
                 """
-                    }
-                    post {
-                        always {
-                            archiveArtifacts artifacts: '**/coverage.html', allowEmptyArchive: true
-                            junit testResults: '**/*test-result.xml', allowEmptyResults: true
-                            cobertura(coberturaReportFile: 'coverage.xml',
-                                    enableNewApi: true,
-                                    autoUpdateHealth: false,
-                                    autoUpdateStability: false,
-                                    failUnstable: true,
-                                    failUnhealthy: true,
-                                    failNoReports: true,
-                                    onlyStable: false,
-                                    fileCoverageTargets: '100, 0, 0',
-                                    lineCoverageTargets: '85, 85, 85',
-                                    packageCoverageTargets: '100, 0, 0',
-                            )
+                        }
+                        post {
+                            always {
+                                archiveArtifacts artifacts: '**/coverage.html', allowEmptyArchive: true
+                                junit testResults: '**/*test-result.xml', allowEmptyResults: true
+                                cobertura(coberturaReportFile: 'coverage.xml',
+                                        enableNewApi: true,
+                                        autoUpdateHealth: false,
+                                        autoUpdateStability: false,
+                                        failUnstable: true,
+                                        failUnhealthy: true,
+                                        failNoReports: true,
+                                        onlyStable: false,
+                                        fileCoverageTargets: '100, 0, 0',
+                                        lineCoverageTargets: '85, 85, 85',
+                                        packageCoverageTargets: '100, 0, 0',
+                                )
+                            }
                         }
                     }
                 }
             }
+
         }
+
 
         stage('install-kind') {
             steps {
