@@ -53,7 +53,7 @@ pipeline {
     }
 
     environment {
-        CLUSTER_NAME = 'v8o-kind'
+        CLUSTER_NAME = 'verrazzano'
         POST_DUMP_FAILED_FILE = "${WORKSPACE}/post_dump_failed_file.tmp"
         KUBECONFIG = "${WORKSPACE}/test_kubeconfig"
         VERRAZZANO_KUBECONFIG = "${KUBECONFIG}"
