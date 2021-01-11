@@ -5,13 +5,16 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/onsi/ginkgo"
+	appsv1 "k8s.io/api/apps/v1"
 	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -49,8 +52,10 @@ func DoesCRDExist(crdName string) bool {
 		ginkgo.Fail("Could not get apix client")
 	}
 
-	// ignoring error for now
-	crds, _ := apixClient.CustomResourceDefinitions().List(context.TODO(), metav1.ListOptions{})
+	crds, err := apixClient.CustomResourceDefinitions().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		ginkgo.Fail(fmt.Sprintf("Failed to get CRDS with error: %v", err))
+	}
 
 	for i := range crds.Items {
 		if strings.Compare(crds.Items[i].ObjectMeta.Name, crdName) == 0 {
@@ -59,4 +64,56 @@ func DoesCRDExist(crdName string) bool {
 	}
 
 	return false
+}
+
+// DoesNamespaceExist returns whether a namespace with the given name exists for the cluster
+func DoesNamespaceExist(name string) bool {
+	// Get the kubernetes clientset
+	clientset := getKubernetesClientset()
+
+	namespace, err := clientset.CoreV1().Namespaces().Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		ginkgo.Fail(fmt.Sprintf("Failed to get namespace %s with error: %v", name, err))
+	}
+
+	return namespace != nil
+}
+
+// DoesJobExist returns whether a job with the given name and namespace exists for the cluster
+func DoesJobExist(namespace string, name string) bool {
+	// Get the kubernetes clientset
+	clientset := getKubernetesClientset()
+
+	job, err := clientset.BatchV1().Jobs(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		ginkgo.Fail(fmt.Sprintf("Failed to get job %s in namespace %s with error: %v", name, namespace, err))
+	}
+
+	return job != nil
+}
+
+// GetDeploymentList returns the list of deployments in a given namespace for the cluster
+func GetDeploymentList(namespace string) *appsv1.DeploymentList {
+	// Get the kubernetes clientset
+	clientset := getKubernetesClientset()
+
+	deployments, err := clientset.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		ginkgo.Fail(fmt.Sprintf("Failed to get deployments in namespace %s with error: %v", namespace, err))
+	}
+	return deployments
+}
+
+// getKubernetesClientset returns the Kubernetes clienset for the cluster
+func getKubernetesClientset() *kubernetes.Clientset {
+	// use the current context in the kubeconfig
+	config := GetKubeConfig()
+
+	// create the clientset once and cache it
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		ginkgo.Fail("Could not get Kubernetes clientset")
+	}
+
+	return clientset
 }
