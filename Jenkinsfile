@@ -126,19 +126,6 @@ pipeline {
                                 """
                             }
                         }
-                        stage('Scan Image') {
-                            when { not { buildingTag() } }
-                            steps {
-                                script {
-                                    clairScanTemp "${env.DOCKER_REPO}/${env.DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
-                                }
-                            }
-                            post {
-                                always {
-                                    archiveArtifacts artifacts: '**/scanning-report.json', allowEmptyArchive: true
-                                }
-                            }
-                        }
                         stage('Generate operator.yaml') {
                             when { not { buildingTag() } }
                             steps {
@@ -290,31 +277,48 @@ pipeline {
             }
         }
 
-        stage("install-verrazzano") {
-            steps {
-                sh """
-                    echo "Waiting for Operator to be ready"
-                    cd ${GO_REPO_PATH}/verrazzano
-                    kubectl -n verrazzano-install rollout status deployment/verrazzano-platform-operator
+        stage("Install & Scan") {
+            parallel("Install & Scan") {
+                stage('Scan Image') {
+                    when { not { buildingTag() } }
+                    steps {
+                        script {
+                            clairScanTemp "${env.DOCKER_REPO}/${env.DOCKER_NAMESPACE}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                        }
+                    }
+                    post {
+                        always {
+                            archiveArtifacts artifacts: '**/scanning-report.json', allowEmptyArchive: true
+                        }
+                    }
+                }
+                stage("install-verrazzano") {
+                    steps {
+                        sh """
+                            echo "Waiting for Operator to be ready"
+                            cd ${GO_REPO_PATH}/verrazzano
+                            kubectl -n verrazzano-install rollout status deployment/verrazzano-platform-operator
 
-                    echo "Installing Verrazzano on Kind"
-                    kubectl apply -f ${INSTALL_CONFIG_FILE_KIND}
+                            echo "Installing Verrazzano on Kind"
+                            kubectl apply -f ${INSTALL_CONFIG_FILE_KIND}
 
-                    # wait for Verrazzano install to complete
-                    ./tests/e2e/config/scripts/wait-for-verrazzano-install.sh
-                """
-            }
-            post {
-                always {
-                    sh """
-                        ## dump out install logs
-                        mkdir -p ${WORKSPACE}/verrazzano/operator/scripts/install/build/logs
-                        kubectl logs --selector=job-name=verrazzano-install-my-verrazzano > ${WORKSPACE}/verrazzano/operator/scripts/install/build/logs/verrazzano-install.log --tail -1
-                        kubectl describe pod --selector=job-name=verrazzano-install-my-verrazzano > ${WORKSPACE}/verrazzano/operator/scripts/install/build/logs/verrazzano-install-job-pod.out
-                        echo "Verrazzano Installation logs dumped to verrazzano-install.log"
-                        echo "Verrazzano Install pod description dumped to verrazzano-install-job-pod.out"
-                        echo "------------------------------------------"
-                    """
+                            # wait for Verrazzano install to complete
+                            ./tests/e2e/config/scripts/wait-for-verrazzano-install.sh
+                        """
+                    }
+                    post {
+                        always {
+                            sh """
+                                ## dump out install logs
+                                mkdir -p ${WORKSPACE}/verrazzano/operator/scripts/install/build/logs
+                                kubectl logs --selector=job-name=verrazzano-install-my-verrazzano > ${WORKSPACE}/verrazzano/operator/scripts/install/build/logs/verrazzano-install.log --tail -1
+                                kubectl describe pod --selector=job-name=verrazzano-install-my-verrazzano > ${WORKSPACE}/verrazzano/operator/scripts/install/build/logs/verrazzano-install-job-pod.out
+                                echo "Verrazzano Installation logs dumped to verrazzano-install.log"
+                                echo "Verrazzano Install pod description dumped to verrazzano-install-job-pod.out"
+                                echo "------------------------------------------"
+                            """
+                        }
+                    }
                 }
             }
         }
