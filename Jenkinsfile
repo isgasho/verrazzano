@@ -368,7 +368,7 @@ pipeline {
 
             sh """
                 cd ${GO_REPO_PATH}/verrazzano
-                ./tests/e2e/config/scripts/delete-kind-cluster.sh
+                make delete-cluster
                 if [ -f ${POST_DUMP_FAILED_FILE} ]; then
                   echo "Failures seen during dumping of artifacts, treat post as failed"
                   exit 1
