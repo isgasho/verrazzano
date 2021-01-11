@@ -5,16 +5,16 @@ package verrazzano_test
 
 import (
 	"fmt"
-	"github.com/onsi/ginkgo/config"
-	"github.com/onsi/ginkgo/reporters"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/config"
+	"github.com/onsi/ginkgo/reporters"
+	"github.com/onsi/gomega"
 )
 
 func TestVerrazzano(t *testing.T) {
-	RegisterFailHandler(Fail)
+	gomega.RegisterFailHandler(ginkgo.Fail)
 	junitReporter := reporters.NewJUnitReporter(fmt.Sprintf("verrazzano-%d-test-result.xml", config.GinkgoConfig.ParallelNode))
-	RunSpecsWithDefaultAndCustomReporters(t, "Verrazzano Suite", []Reporter{junitReporter})
+	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "Verrazzano Suite", []ginkgo.Reporter{junitReporter})
 }

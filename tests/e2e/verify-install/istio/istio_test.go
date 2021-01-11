@@ -6,24 +6,24 @@ package istio_test
 import (
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-	. "github.com/verrazzano/verrazzano/tests/e2e/util"
+	"github.com/onsi/ginkgo"
+	ginkgoExt "github.com/onsi/ginkgo/extensions/table"
+	"github.com/onsi/gomega"
+	"github.com/verrazzano/verrazzano/tests/e2e/util"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-var _ = Describe("Istio", func() {
+var _ = ginkgo.Describe("Istio", func() {
 	const istioNamespace = "istio-system"
 
-	DescribeTable("namespace",
+	ginkgoExt.DescribeTable("namespace",
 		func(name string) {
-			Expect(DoesNamespaceExist(name)).To(BeTrue())
+			gomega.Expect(util.DoesNamespaceExist(name)).To(gomega.BeTrue())
 		},
-		Entry(fmt.Sprintf("%s namespace should exist", istioNamespace), istioNamespace),
+		ginkgoExt.Entry(fmt.Sprintf("%s namespace should exist", istioNamespace), istioNamespace),
 	)
 
-	DescribeTable("deployments",
+	ginkgoExt.DescribeTable("deployments",
 		func(namespace string) {
 			expectedDeployments := []string{
 				"grafana",
@@ -46,24 +46,24 @@ var _ = Describe("Istio", func() {
 				}
 				return deploymentNames
 			}
-			deployments := GetDeploymentList(namespace)
-			Expect(deployments).Should(
-				SatisfyAll(
-					Not(BeNil()),
-					WithTransform(deploymentNames, ContainElements(expectedDeployments)),
+			deployments := util.GetDeploymentList(namespace)
+			gomega.Expect(deployments).Should(
+				gomega.SatisfyAll(
+					gomega.Not(gomega.BeNil()),
+					gomega.WithTransform(deploymentNames, gomega.ContainElements(expectedDeployments)),
 				),
 			)
-			Expect(len(deployments.Items)).To(Equal(len(expectedDeployments)))
+			gomega.Expect(len(deployments.Items)).To(gomega.Equal(len(expectedDeployments)))
 		},
-		Entry(fmt.Sprintf("%s namespace should contain expected list of deployments", istioNamespace), istioNamespace),
+		ginkgoExt.Entry(fmt.Sprintf("%s namespace should contain expected list of deployments", istioNamespace), istioNamespace),
 	)
 
 	const istioJob = "istio-init-crd-14-1.4.6"
-	DescribeTable("job",
+	ginkgoExt.DescribeTable("job",
 		func(namespace string, name string) {
-			Expect(DoesJobExist(namespace, name)).To(BeTrue())
+			gomega.Expect(util.DoesJobExist(namespace, name)).To(gomega.BeTrue())
 		},
-		Entry(fmt.Sprintf("%s namespace should contain job %s", istioNamespace, istioJob), istioNamespace, istioJob),
+		ginkgoExt.Entry(fmt.Sprintf("%s namespace should contain job %s", istioNamespace, istioJob), istioNamespace, istioJob),
 	)
 
 })
