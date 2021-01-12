@@ -4,116 +4,104 @@
 package util
 
 import (
-	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/onsi/ginkgo"
-	appsv1 "k8s.io/api/apps/v1"
-	apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
+	v1 "k8s.io/api/core/v1"
 )
 
-// GetKubeConfig will get the kubeconfig from the environment variable KUBECONFIG, if set, or else from $HOME/.kube/config
-func GetKubeConfig() *restclient.Config {
-	kubeconfig := ""
-	// if the KUBECONFIG environment variable is set, use that
-	kubeconfigEnvVar := os.Getenv("KUBECONFIG")
-	if len(kubeconfigEnvVar) > 0 {
-		kubeconfig = kubeconfigEnvVar
-	} else if home := homedir.HomeDir(); home != "" {
-		// next look for $HOME/.kube/config
-		kubeconfig = filepath.Join(home, ".kube", "config")
-	} else {
-		// give up
-		ginkgo.Fail("Could not find kube")
+// Concurrently executes the given assertions in parallel and waits for them all to complete
+func Concurrently(assertions ...func()) {
+	number := len(assertions)
+	var wg sync.WaitGroup
+	wg.Add(number)
+	for _, assertion := range assertions {
+		go assert(&wg, assertion)
 	}
-
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		ginkgo.Fail("Could not get current context from kubeconfig " + kubeconfig)
-	}
-	return config
+	wg.Wait()
 }
 
-// DoesCRDExist returns whether a CRD with the given name exists for the cluster
-func DoesCRDExist(crdName string) bool {
-	// use the current context in the kubeconfig
-	config := GetKubeConfig()
+func assert(wg *sync.WaitGroup, assertion func()) {
+	defer wg.Done()
+	defer ginkgo.GinkgoRecover()
+	assertion()
+}
 
-	apixClient, err := apixv1beta1client.NewForConfig(config)
-	if err != nil {
-		ginkgo.Fail("Could not get apix client")
+//PodsRunning checks if all the pods identified by namePrefixes are ready and running
+func PodsRunning(namespace string, namePrefixes []string) bool {
+	pods := ListPods(namespace)
+	missing := notRunning(pods.Items, namePrefixes...)
+	if len(missing) > 0 {
+		Log(Info, fmt.Sprintf("Pods %v were NOT running in %v", missing, namespace))
 	}
+	return (len(missing) == 0)
+}
 
-	crds, err := apixClient.CustomResourceDefinitions().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		ginkgo.Fail(fmt.Sprintf("Failed to get CRDS with error: %v", err))
-	}
-
-	for i := range crds.Items {
-		if strings.Compare(crds.Items[i].ObjectMeta.Name, crdName) == 0 {
-			return true
+// notRunning finds the pods not running
+func notRunning(pods []v1.Pod, podNames ...string) []string {
+	var notRunning = []string{}
+	for _, name := range podNames {
+		Log(Info, fmt.Sprintf("Checking if Pod %v is running", name))
+		running := isPodRunning(pods, name)
+		if !running {
+			Log(Info, fmt.Sprintf("Pod %v is not running", name))
+			notRunning = append(notRunning, name)
+		} else {
+			Log(Info, fmt.Sprintf("Pod %v is running", name))
 		}
 	}
+	return notRunning
+}
 
+// isPodRunning checks if the pod(s) with the name-prefix does exist and is running
+func isPodRunning(pods []v1.Pod, namePrefix string) bool {
+	running := false
+	for i := range pods {
+		if strings.HasPrefix(pods[i].Name, namePrefix) {
+			running = isReadyAndRunning(pods[i])
+			if running {
+				Log(Info, fmt.Sprintf("  Pod %v is running\n", pods[i].Name))
+			} else {
+				status := "status:"
+				if len(pods[i].Status.ContainerStatuses) > 0 {
+					for _, cs := range pods[i].Status.ContainerStatuses {
+						//if cs.State.Waiting.Reason is CrashLoopBackOff, no need to retry
+						if cs.State.Waiting != nil {
+							status = fmt.Sprintf("%v %v", status, cs.State.Waiting.Reason)
+						}
+						if cs.State.Terminated != nil {
+							status = fmt.Sprintf("%v %v", status, cs.State.Terminated.Reason)
+						}
+						if cs.LastTerminationState.Terminated != nil {
+							status = fmt.Sprintf("%v %v", status, cs.LastTerminationState.Terminated.Reason)
+						}
+					}
+				}
+				Log(Info, fmt.Sprintf("  Pod %v was NOT running: %v \n", pods[i].Name, status))
+				return false
+			}
+		}
+	}
+	return running
+}
+
+// isReadyAndRunning checks if the pod is ready and running
+func isReadyAndRunning(pod v1.Pod) bool {
+	Log(Info, fmt.Sprintf("Pod %v has phase %v", pod.Name, pod.Status.Phase))
+	if pod.Status.Phase == v1.PodRunning {
+		for _, c := range pod.Status.ContainerStatuses {
+			Log(Info, fmt.Sprintf("Pod %v container %v ready: %v", pod.Name, c.Name, c.Ready))
+			if !c.Ready {
+				return false
+			}
+		}
+		return true
+	}
+	if pod.Status.Reason == "Evicted" && len(pod.Status.ContainerStatuses) == 0 {
+		Log(Info, fmt.Sprintf("  Pod %v was Evicted\n", pod.Name))
+		return true //ignore this evicted pod
+	}
 	return false
-}
-
-// DoesNamespaceExist returns whether a namespace with the given name exists for the cluster
-func DoesNamespaceExist(name string) bool {
-	// Get the kubernetes clientset
-	clientset := getKubernetesClientset()
-
-	namespace, err := clientset.CoreV1().Namespaces().Get(context.TODO(), name, metav1.GetOptions{})
-	if err != nil {
-		ginkgo.Fail(fmt.Sprintf("Failed to get namespace %s with error: %v", name, err))
-	}
-
-	return namespace != nil
-}
-
-// DoesJobExist returns whether a job with the given name and namespace exists for the cluster
-func DoesJobExist(namespace string, name string) bool {
-	// Get the kubernetes clientset
-	clientset := getKubernetesClientset()
-
-	job, err := clientset.BatchV1().Jobs(namespace).Get(context.TODO(), name, metav1.GetOptions{})
-	if err != nil {
-		ginkgo.Fail(fmt.Sprintf("Failed to get job %s in namespace %s with error: %v", name, namespace, err))
-	}
-
-	return job != nil
-}
-
-// GetDeploymentList returns the list of deployments in a given namespace for the cluster
-func GetDeploymentList(namespace string) *appsv1.DeploymentList {
-	// Get the kubernetes clientset
-	clientset := getKubernetesClientset()
-
-	deployments, err := clientset.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		ginkgo.Fail(fmt.Sprintf("Failed to get deployments in namespace %s with error: %v", namespace, err))
-	}
-	return deployments
-}
-
-// getKubernetesClientset returns the Kubernetes clienset for the cluster
-func getKubernetesClientset() *kubernetes.Clientset {
-	// use the current context in the kubeconfig
-	config := GetKubeConfig()
-
-	// create the clientset once and cache it
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		ginkgo.Fail("Could not get Kubernetes clientset")
-	}
-
-	return clientset
 }

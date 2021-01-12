@@ -1,18 +1,20 @@
+// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
 package kubernetes_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 )
 
 func TestKubernetes(t *testing.T) {
-	RegisterFailHandler(Fail)
+	gomega.RegisterFailHandler(ginkgo.Fail)
 	junitReporter := reporters.NewJUnitReporter(fmt.Sprintf("kubernetes-%d-test-result.xml", config.GinkgoConfig.ParallelNode))
-	RunSpecsWithDefaultAndCustomReporters(t, "Kubernetes Suite", []Reporter{junitReporter})
+	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, "Kubernetes Suite", []ginkgo.Reporter{junitReporter})
 }
