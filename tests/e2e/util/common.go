@@ -36,20 +36,16 @@ func PodsRunning(namespace string, namePrefixes []string) bool {
 	if len(missing) > 0 {
 		Log(Info, fmt.Sprintf("Pods %v were NOT running in %v", missing, namespace))
 	}
-	return (len(missing) == 0)
+	return len(missing) == 0
 }
 
 // notRunning finds the pods not running
 func notRunning(pods []v1.Pod, podNames ...string) []string {
-	var notRunning = []string{}
+	var notRunning []string
 	for _, name := range podNames {
-		Log(Info, fmt.Sprintf("Checking if Pod %v is running", name))
 		running := isPodRunning(pods, name)
 		if !running {
-			Log(Info, fmt.Sprintf("Pod %v is not running", name))
 			notRunning = append(notRunning, name)
-		} else {
-			Log(Info, fmt.Sprintf("Pod %v is running", name))
 		}
 	}
 	return notRunning
@@ -61,9 +57,7 @@ func isPodRunning(pods []v1.Pod, namePrefix string) bool {
 	for i := range pods {
 		if strings.HasPrefix(pods[i].Name, namePrefix) {
 			running = isReadyAndRunning(pods[i])
-			if running {
-				Log(Info, fmt.Sprintf("  Pod %v is running\n", pods[i].Name))
-			} else {
+			if !running {
 				status := "status:"
 				if len(pods[i].Status.ContainerStatuses) > 0 {
 					for _, cs := range pods[i].Status.ContainerStatuses {
@@ -89,11 +83,10 @@ func isPodRunning(pods []v1.Pod, namePrefix string) bool {
 
 // isReadyAndRunning checks if the pod is ready and running
 func isReadyAndRunning(pod v1.Pod) bool {
-	Log(Info, fmt.Sprintf("Pod %v has phase %v", pod.Name, pod.Status.Phase))
 	if pod.Status.Phase == v1.PodRunning {
 		for _, c := range pod.Status.ContainerStatuses {
-			Log(Info, fmt.Sprintf("Pod %v container %v ready: %v", pod.Name, c.Name, c.Ready))
 			if !c.Ready {
+				Log(Info, fmt.Sprintf("Pod %v container %v ready: %v", pod.Name, c.Name, c.Ready))
 				return false
 			}
 		}
