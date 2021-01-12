@@ -12,7 +12,7 @@ spec:
       nginxInstallArgs:
         - name: controller.kind
           value: DaemonSet
-        - name: controller.daemonset.useHostPort
+        - name: controller.hostPort.enabled
           value: "true"
         - name: controller.nodeSelector.ingress-ready
           value: "true"
