@@ -9,6 +9,13 @@ SCRIPT_DIR=$(cd $(dirname $0); pwd -P)
 
 set -euo pipefail
 
+BACKEND=${1:-core}
+suffix=""
+
+if [[ $BACKEND = "coherence" ]]; then
+  suffix="-$BACKEND"
+fi
+
 echo "Installing Helidon Sock Shop application."
 
 echo "Wait for Verrazzano operator to be ready."
@@ -17,7 +24,7 @@ echo "Wait for Verrazzano validation to be ready."
 kubectl -n verrazzano-system wait --for=condition=ready pods -l name=verrazzano-validation --timeout 2m
 
 echo "Apply application model."
-kubectl apply -f ${SCRIPT_DIR}/sock-shop-model.yaml
+kubectl apply -f ${SCRIPT_DIR}/sock-shop-model${suffix}.yaml
 echo "Apply application binding."
 kubectl apply -f ${SCRIPT_DIR}/sock-shop-binding.yaml
 
