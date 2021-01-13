@@ -8,6 +8,7 @@ go 1.13
 require (
 	github.com/golang/mock v1.4.4
 	github.com/gordonklaus/ineffassign v0.0.0-20210104184537-8eed68eb605f
+	github.com/hashicorp/go-retryablehttp v0.6.6
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
 	github.com/stretchr/testify v1.5.1
