@@ -8,61 +8,97 @@ metadata:
   namespace: default
 spec:
   description: "Sock Shop Model"
-  helidonApplications:
+  coherenceClusters:
     - name: "carts"
-      port: 80
-      targetPort: 7001
-      image: "helidonsockshop/carts-coherence:2.0.0"
+      image: "ghcr.io/helidon-sockshop/carts-coherence:2.2.0
+      imagePullSecrets:
+        - name: github-packages
+        - name: ocr
       connections:
         - ingress:
             - name: "carts-ingress"
               match:
                 - uri:
                     prefix: /carts
+      ports:
+        - name: http
+          port: 7001
+          service:
+            name: carts
+            port: 80
     - name: "catalogue"
-      port: 80
-      targetPort: 7001
-      image: "helidonsockshop/catalog-coherence:2.0.0"
+      image: "ghcr.io/helidon-sockshop/catalog-coherence:2.2.0"
+      imagePullSecrets:
+        - name: github-packages
+        - name: ocr
       connections:
         - ingress:
             - name: "catalogue-ingress"
               match:
                 - uri:
                     prefix: /catalogue
+      ports:
+        - name: http
+          port: 7001
+          service:
+            name: catalogue
+            port: 80
     - name: "orders"
-      port: 80
-      targetPort: 7001
-      image: "helidonsockshop/orders-coherence:2.0.0"
+      image: "ghcr.io/helidon-sockshop/orders-coherence:2.2.0"
+      imagePullSecrets:
+        - name: github-packages
+        - name: ocr
       connections:
         - ingress:
             - name: "orders-ingress"
               match:
                 - uri:
                     prefix: /orders
+      ports:
+        - name: http
+          port: 7001
+          service:
+            name: orders
+            port: 80
     - name: "payment"
-      port: 80
-      targetPort: 7001
-      image: "helidonsockshop/payment-coherence:2.0.0"
+      image: "ghcr.io/helidon-sockshop/payment-coherence:2.2.0"
+      imagePullSecrets:
+        - name: github-packages
+        - name: ocr
       connections:
         - ingress:
             - name: "payment-ingress"
               match:
                 - uri:
                     prefix: /payment
+      ports:
+        - name: http
+          port: 7001
+          service:
+            name: payment-http
+            port: 80
     - name: "shipping"
-      port: 80
-      targetPort: 7001
-      image: "helidonsockshop/shipping-coherence:2.0.0"
+      image: "ghcr.io/helidon-sockshop/shipping-coherence:2.2.0"
+      imagePullSecrets:
+        - name: github-packages
+        - name: ocr
       connections:
         - ingress:
             - name: "shipping-ingress"
               match:
                 - uri:
                     prefix: /shipping
+      ports:
+        - name: http
+          port: 7001
+          service:
+            name: shipping-http
+            port: 80
     - name: "user"
-      port: 80
-      targetPort: 7001
-      image: "helidonsockshop/users-coherence:2.0.0"
+      image: "ghcr.io/helidon-sockshop/users-coherence:2.2.0"
+      imagePullSecrets:
+        - name: github-packages
+        - name: ocr
       connections:
         - ingress:
             - name: "user-ingress"
@@ -77,3 +113,9 @@ spec:
                     prefix: /customers
                 - uri:
                     prefix: /cards
+      ports:
+        - name: http
+          port: 7001
+          service:
+            name: user
+            port: 80
