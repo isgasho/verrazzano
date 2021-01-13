@@ -22,19 +22,22 @@ import (
 )
 
 const (
-	NUM_RETRIES    = 7
-	RETRY_WAIT_MIN = 1 * time.Second
-	RETRY_WAIT_MAX = 30 * time.Second
+	// NumRetries - maximum number of retries
+	NumRetries = 7
+	// RetryWaitMin - minimum retry wait
+	RetryWaitMin = 1 * time.Second
+	// RetryWaitMax - maximum retry wait
+	RetryWaitMax = 30 * time.Second
 )
 
-// same as GetWebPage, but with additional caData
+// GetWebPageWithCABundle - same as GetWebPage, but with additional caData
 func GetWebPageWithCABundle(url string, hostHeader string) (int, string) {
-	return doGetWebPage(url, hostHeader, GetVerrazzanoHttpClient())
+	return doGetWebPage(url, hostHeader, GetVerrazzanoHTTPClient())
 }
 
 // GetCertificates will return the server SSL certificates for the given URL.
 func GetCertificates(url string) ([]*x509.Certificate, error) {
-	resp, err := GetVerrazzanoHttpClient().Get(url)
+	resp, err := GetVerrazzanoHTTPClient().Get(url)
 	if err != nil {
 		Log(Error, err.Error())
 		ginkgo.Fail("Could not get web page " + url)
@@ -63,12 +66,13 @@ func doGetWebPage(url string, hostHeader string, httpClient *retryablehttp.Clien
 	return resp.StatusCode, string(html)
 }
 
-func GetVerrazzanoHttpClient() *retryablehttp.Client {
-	rawClient := getHttpClientWIthCABundle(getVerrazzanoCACert())
-	return newRetryableHttpClient(rawClient)
+// GetVerrazzanoHTTPClient returns the Http client
+func GetVerrazzanoHTTPClient() *retryablehttp.Client {
+	rawClient := getHTTPClientWIthCABundle(getVerrazzanoCACert())
+	return newRetryableHTTPClient(rawClient)
 }
 
-func getHttpClientWIthCABundle(caData []byte) *http.Client {
+func getHTTPClientWIthCABundle(caData []byte) *http.Client {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: rootCertPool(caData)}}
 
 	proxyURL := getProxyURL()
@@ -102,17 +106,17 @@ func getVerrazzanoCACert() []byte {
 }
 
 func getProxyURL() string {
-	if proxyUrl := os.Getenv("https_proxy"); proxyUrl != "" {
-		return proxyUrl
+	if proxyURL := os.Getenv("https_proxy"); proxyURL != "" {
+		return proxyURL
 	}
-	if proxyUrl := os.Getenv("HTTPS_PROXY"); proxyUrl != "" {
-		return proxyUrl
+	if proxyURL := os.Getenv("HTTPS_PROXY"); proxyURL != "" {
+		return proxyURL
 	}
-	if proxyUrl := os.Getenv("http_proxy"); proxyUrl != "" {
-		return proxyUrl
+	if proxyURL := os.Getenv("http_proxy"); proxyURL != "" {
+		return proxyURL
 	}
-	if proxyUrl := os.Getenv("HTTP_PROXY"); proxyUrl != "" {
-		return proxyUrl
+	if proxyURL := os.Getenv("HTTP_PROXY"); proxyURL != "" {
+		return proxyURL
 	}
 	return ""
 }
@@ -138,11 +142,11 @@ func getNodeIP() string {
 	return ""
 }
 
-func newRetryableHttpClient(client *http.Client) *retryablehttp.Client {
+func newRetryableHTTPClient(client *http.Client) *retryablehttp.Client {
 	retryableClient := retryablehttp.NewClient() //default of 4 retries is sufficient for us
-	retryableClient.RetryMax = NUM_RETRIES
-	retryableClient.RetryWaitMin = RETRY_WAIT_MIN
-	retryableClient.RetryWaitMax = RETRY_WAIT_MAX
+	retryableClient.RetryMax = NumRetries
+	retryableClient.RetryWaitMin = RetryWaitMin
+	retryableClient.RetryWaitMax = RetryWaitMax
 	retryableClient.HTTPClient = client
 	return retryableClient
 }
