@@ -5,12 +5,12 @@
 #
 SCRIPT_DIR=$(cd $(dirname $0); pwd -P)
 
-DOCKER_SVR="${1:-$OCIR_PHX_REPO}"
-DOCKER_USR="${2:-$OCIR_CREDS_USR}"
-DOCKER_PWD="${3:-$OCIR_CREDS_PSW}"
+DOCKER_SVR="${1:-$OCR_REPO}"
+DOCKER_USR="${2:-$OCR_CREDS_USR}"
+DOCKER_PWD="${3:-$OCR_CREDS_PSW}"
 
 NAMESPACE="todo"
-SECRET="tododomain-repo-credentials"
+SECRET=$IMAGE_PULL_SECRET
 TODO_COMPONENT_FILE="${SCRIPT_DIR}/todo-comp.yaml"
 
 # WLS_DOMAIN can get out of sync with value specified for domain in todo-comp.yaml

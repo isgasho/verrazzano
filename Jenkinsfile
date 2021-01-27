@@ -74,6 +74,9 @@ pipeline {
         INSTALL_CONFIG_FILE_KIND = "./tests/e2e/config/scripts/install-verrazzano-kind.yaml"
         INSTALL_PROFILE = "dev"
         VZ_ENVIRONMENT_NAME = "default"
+        TODO_APP_IMAGE = "container-registry.oracle.com/verrazzano/example-todo:0.8.0"
+        WEBLOGIC_PSW = credentials('weblogic-example-domain-password')
+        DATABASE_PSW = credentials('todo-mysql-password')
     }
 
     stages {
@@ -454,6 +457,27 @@ pipeline {
                                 stage('restapi') {
                                     steps {
                                         runGinkgo('verify-infra/restapi')
+                                    }
+                                }
+                                stage('oam') {
+                                    steps {
+                                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                                            sh """
+                                                echo "Waiting for the application operator to be ready"
+                                                kubectl -n verrazzano-system rollout status deployment/verrazzano-application-operator
+                                                cd ${WORKSPACE}/verrazzano-acceptance-test-suite
+                                                ${WORKSPACE}/verrazzano/application-operator/examples/todo/install-todo.sh
+                                                ginkgo -v -keepGoing --noColor verify-demo-app/todo-oam/...
+                                            """
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                            dumpVerrazzanoApplicationOperatorLogs()
+                                            sh """
+                                                ${WORKSPACE}/verrazzano/application-operator/examples/todo/uninstall-todo.sh
+                                            """
+                                        }
                                     }
                                 }
                             }

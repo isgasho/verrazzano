@@ -1,0 +1,11 @@
+grafana
+istio-citadel
+istio-egressgateway
+istio-galley
+istio-ingressgateway
+istio-pilot
+istio-policy
+istio-sidecar-injector
+istio-telemetry
+istiocoredns
+prometheus
