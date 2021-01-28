@@ -466,7 +466,7 @@ pipeline {
                                                 echo "Waiting for the application operator to be ready"
                                                 kubectl -n verrazzano-system rollout status deployment/verrazzano-application-operator
                                                 cd ${WORKSPACE}/tests/e2e
-                                                ${WORKSPACE}/verrazzano/application-operator/examples/todo/install-todo.sh
+                                                ${WORKSPACE}/application-operator/examples/todo/install-todo.sh
                                                 ginkgo -v -keepGoing --noColor verify-demo-app/todo-oam/...
                                             """
                                         }
@@ -475,7 +475,7 @@ pipeline {
                                         always {
                                             dumpVerrazzanoApplicationOperatorLogs()
                                             sh """
-                                                ${WORKSPACE}/verrazzano/application-operator/examples/todo/uninstall-todo.sh
+                                                ${WORKSPACE}/application-operator/examples/todo/uninstall-todo.sh
                                             """
                                         }
                                     }
