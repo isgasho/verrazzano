@@ -372,7 +372,7 @@ pipeline {
                                              string(name: 'VERRAZZANO_OPERATOR_IMAGE', value: FULL_IMAGE_NAME),
                                              string(name: 'TEST_ENV', value: 'kind'),
                                              string(name: 'TIMESTAMP', value: TIMESTAMP),
-                                             string(name: 'DUMP_K8S_CLUSTER_ON_SUCCESS', value: DUMP_K8S_CLUSTER_ON_SUCCESS),
+                                             booleanParam(name: 'DUMP_K8S_CLUSTER_ON_SUCCESS', value: DUMP_K8S_CLUSTER_ON_SUCCESS),
                                              string(name: 'INSTALL_PROFILE', value: 'dev')],
                                 wait: true,
                                 propagate: true

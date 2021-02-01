@@ -99,7 +99,7 @@ pipeline {
                     def props = readProperties file: '.verrazzano-development-version'
                     VERRAZZANO_DEV_VERSION = props['verrazzano-development-version']
                     SHORT_COMMIT_HASH = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
-                    DOCKER_IMAGE_TAG = "${VERRAZZANO_DEV_VERSION}-${TIMESTAMP}-${SHORT_COMMIT_HASH}"
+                    DOCKER_IMAGE_TAG = "${VERRAZZANO_DEV_VERSION}-${params.TIMESTAMP}-${SHORT_COMMIT_HASH}"
                 }
             }
         }
