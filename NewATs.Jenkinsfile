@@ -39,6 +39,7 @@ pipeline {
         POST_DUMP_FAILED_FILE = "${WORKSPACE}/post_dump_failed_file.tmp"
         NETRC_FILE = credentials('netrc')
         KUBECONFIG = "${WORKSPACE}/test_kubeconfig"
+        VERRAZZANO_KUBECONFIG = "${KUBECONFIG}"
 
 
         SERVICE_KEY = credentials('PAGERDUTY_SERVICE_KEY')
