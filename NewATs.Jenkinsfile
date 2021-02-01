@@ -202,35 +202,33 @@ pipeline {
                         TEST_ENV = "KIND"
                     }
                     parallel {
-                        stages {
-                            stage('verify-install') {
-                                steps {
-                                    runGinkgoRandomize('verify-install')
-                                }
+                        stage('verify-install') {
+                            steps {
+                                runGinkgoRandomize('verify-install')
                             }
-                            stage('verify-infra restapi') {
-                                steps {
-                                    runGinkgo('verify-infra/restapi')
-                                }
+                        }
+                        stage('verify-infra restapi') {
+                            steps {
+                                runGinkgo('verify-infra/restapi')
                             }
-                            stage('verify-infra oam') {
-                                steps {
-                                    runGinkgo('verify-infra/oam')
-                                }
+                        }
+                        stage('verify-infra oam') {
+                            steps {
+                                runGinkgo('verify-infra/oam')
                             }
-                            stage('verify-infra vmi') {
-                                steps {
-                                    runGinkgo('verify-infra/vmi')
-                                }
+                        }
+                        stage('verify-infra vmi') {
+                            steps {
+                                runGinkgo('verify-infra/vmi')
                             }
-                            stage('examples') {
-                                when {
-                                    expression {params.RUN_EXAMPLE_TESTS == true}
-                                }
-                                steps {
-                                    runGinkgo('examples/todo-list')
-                                    runGinkgo('examples/sock-shop')
-                                }
+                        }
+                        stage('examples') {
+                            when {
+                                expression {params.RUN_EXAMPLE_TESTS == true}
+                            }
+                            steps {
+                                runGinkgo('examples/todo-list')
+                                runGinkgo('examples/sock-shop')
                             }
                         }
                     }
