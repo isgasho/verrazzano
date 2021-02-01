@@ -37,6 +37,7 @@ pipeline {
         CLUSTER_NAME = 'verrazzano'
         POST_DUMP_FAILED_FILE = "${WORKSPACE}/post_dump_failed_file.tmp"
         NETRC_FILE = credentials('netrc')
+        KUBECONFIG = "${WORKSPACE}/test_kubeconfig"
 
 
         SERVICE_KEY = credentials('PAGERDUTY_SERVICE_KEY')
