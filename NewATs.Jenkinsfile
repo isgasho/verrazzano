@@ -24,25 +24,59 @@ pipeline {
     }
 
     environment {
-        DOCKER_REPO = 'ghcr.io'
-        DOCKER_CREDS = credentials('github-packages-credentials-rw')
-        GOPATH = '/home/opc/go'
-        GO_REPO_PATH = "${GOPATH}/src/github.com/verrazzano"
-        IMAGE_PULL_SECRET = 'verrazzano-container-registry'
-        OCR_CREDS = credentials('ocr-pull-and-push-account')
-        OCR_REPO = 'container-registry.oracle.com'
+//         DOCKER_REPO = 'ghcr.io'
+//         DOCKER_CREDS = credentials('github-packages-credentials-rw')
+//         GOPATH = '/home/opc/go'
+//         GO_REPO_PATH = "${GOPATH}/src/github.com/verrazzano"
+//         IMAGE_PULL_SECRET = 'verrazzano-container-registry'
+//         OCR_CREDS = credentials('ocr-pull-and-push-account')
+//         OCR_REPO = 'container-registry.oracle.com'
+//         DOCKER_PLATFORM_CI_IMAGE_NAME = 'verrazzano-platform-operator-jenkins'
+//         DOCKER_PLATFORM_PUBLISH_IMAGE_NAME = 'verrazzano-platform-operator'
+//         DOCKER_PLATFORM_IMAGE_NAME = "${env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'master' ? env.DOCKER_PLATFORM_PUBLISH_IMAGE_NAME : env.DOCKER_PLATFORM_CI_IMAGE_NAME}"
+//         INSTALL_CONFIG_FILE_KIND = "./tests/e2e/config/scripts/install-verrazzano-kind.yaml"
+//         CLUSTER_NAME = 'verrazzano'
+//         POST_DUMP_FAILED_FILE = "${WORKSPACE}/post_dump_failed_file.tmp"
+//         NETRC_FILE = credentials('netrc')
+//         KUBECONFIG = "${WORKSPACE}/test_kubeconfig"
+//         VERRAZZANO_KUBECONFIG = "${KUBECONFIG}"
+//         VZ_ENVIRONMENT_NAME = "default"
+//
+//
+//         SERVICE_KEY = credentials('PAGERDUTY_SERVICE_KEY')
+
         DOCKER_PLATFORM_CI_IMAGE_NAME = 'verrazzano-platform-operator-jenkins'
         DOCKER_PLATFORM_PUBLISH_IMAGE_NAME = 'verrazzano-platform-operator'
         DOCKER_PLATFORM_IMAGE_NAME = "${env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'master' ? env.DOCKER_PLATFORM_PUBLISH_IMAGE_NAME : env.DOCKER_PLATFORM_CI_IMAGE_NAME}"
-        INSTALL_CONFIG_FILE_KIND = "./tests/e2e/config/scripts/install-verrazzano-kind.yaml"
+        DOCKER_OAM_CI_IMAGE_NAME = 'verrazzano-application-operator-jenkins'
+        DOCKER_OAM_PUBLISH_IMAGE_NAME = 'verrazzano-application-operator'
+        DOCKER_OAM_IMAGE_NAME = "${env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'master' ? env.DOCKER_OAM_PUBLISH_IMAGE_NAME : env.DOCKER_OAM_CI_IMAGE_NAME}"
+        CREATE_LATEST_TAG = "${env.BRANCH_NAME == 'master' ? '1' : '0'}"
+        GOPATH = '/home/opc/go'
+        GO_REPO_PATH = "${GOPATH}/src/github.com/verrazzano"
+        DOCKER_CREDS = credentials('github-packages-credentials-rw')
+        DOCKER_EMAIL = credentials('github-packages-email')
+        DOCKER_REPO = 'ghcr.io'
+        DOCKER_NAMESPACE = 'verrazzano'
+        NETRC_FILE = credentials('netrc')
+        GITHUB_API_TOKEN = credentials('github-api-token-release-assets')
+        GITHUB_RELEASE_USERID = credentials('github-userid-release')
+        GITHUB_RELEASE_EMAIL = credentials('github-email-release')
+        SERVICE_KEY = credentials('PAGERDUTY_SERVICE_KEY')
+
         CLUSTER_NAME = 'verrazzano'
         POST_DUMP_FAILED_FILE = "${WORKSPACE}/post_dump_failed_file.tmp"
-        NETRC_FILE = credentials('netrc')
         KUBECONFIG = "${WORKSPACE}/test_kubeconfig"
         VERRAZZANO_KUBECONFIG = "${KUBECONFIG}"
+        OCR_CREDS = credentials('ocr-pull-and-push-account')
+        OCR_REPO = 'container-registry.oracle.com'
+        IMAGE_PULL_SECRET = 'verrazzano-container-registry'
+        INSTALL_CONFIG_FILE_KIND = "./tests/e2e/config/scripts/install-verrazzano-kind.yaml"
+        INSTALL_PROFILE = "dev"
+        VZ_ENVIRONMENT_NAME = "default"
 
-
-        SERVICE_KEY = credentials('PAGERDUTY_SERVICE_KEY')
+        WEBLOGIC_PSW = credentials('weblogic-example-domain-password') // Needed by ToDoList example test
+        DATABASE_PSW = credentials('todo-mysql-password') // Needed by ToDoList example test
     }
 
     stages {
