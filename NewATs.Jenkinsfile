@@ -258,12 +258,19 @@ pipeline {
                                 runGinkgo('verify-infra/vmi')
                             }
                         }
-                        stage('examples') {
+                        stage('examples todo') {
                             when {
                                 expression {params.RUN_EXAMPLE_TESTS == true}
                             }
                             steps {
                                 runGinkgo('examples/todo-list')
+                            }
+                        }
+                        stage('examples socks') {
+                            when {
+                                expression {params.RUN_EXAMPLE_TESTS == true}
+                            }
+                            steps {
                                 runGinkgo('examples/sock-shop')
                             }
                         }
