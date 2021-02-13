@@ -282,6 +282,7 @@ func (r *Reconciler) addLogging(ctx context.Context, log logr.Logger, namespace 
 		ParseRules:             fluentdParsingRules,
 		StorageVolumeName:      "logs",
 		StorageVolumeMountPath: "/logs",
+		WorkloadType:           "coherence",
 	}
 
 	// fluentdManager.Apply wants a QRR but it only cares about the namespace (at least for

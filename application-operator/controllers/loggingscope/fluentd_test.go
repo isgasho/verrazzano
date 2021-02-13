@@ -44,14 +44,14 @@ func TestFluentdApply(t *testing.T) {
 	resource := createTestResourceRelation()
 	fluentdPod := createTestFluentdPod()
 
-	fluentd := Fluentd{mockClient, ctrl.Log, context.Background(), testParseRules, testStorageName, scratchVolMountPath}
+	fluentd := Fluentd{mockClient, ctrl.Log, context.Background(), testParseRules, testStorageName, scratchVolMountPath, "test"}
 
 	// simulate config map not existing
 	mockClient.EXPECT().
-		List(fluentd.Context, gomock.Not(gomock.Nil()), client.InNamespace(testNamespace), client.MatchingFields{"metadata.name": configMapName}).
+		List(fluentd.Context, gomock.Not(gomock.Nil()), client.InNamespace(testNamespace), client.MatchingFields{"metadata.name": configMapName + "-test"}).
 		DoAndReturn(func(ctx context.Context, resources *unstructured.UnstructuredList, inNamespace client.InNamespace, fields client.MatchingFields) error {
 			asserts.Equal(t, client.InNamespace(testNamespace), inNamespace)
-			asserts.Equal(t, client.MatchingFields{"metadata.name": configMapName}, fields)
+			asserts.Equal(t, client.MatchingFields{"metadata.name": configMapName + "-test"}, fields)
 			asserts.Equal(t, configMapAPIVersion, resources.GetAPIVersion())
 			asserts.Equal(t, configMapKind, resources.GetKind())
 			return nil
@@ -89,14 +89,14 @@ func TestFluentdApplyForUpdate(t *testing.T) {
 	resource := createTestResourceRelation()
 	fluentdPod := createTestFluentdPodForUpdate()
 
-	fluentd := Fluentd{mockClient, ctrl.Log, context.Background(), testParseRules, testStorageName, scratchVolMountPath}
+	fluentd := Fluentd{mockClient, ctrl.Log, context.Background(), testParseRules, testStorageName, scratchVolMountPath, "test"}
 
 	// simulate config map existing
 	mockClient.EXPECT().
-		List(fluentd.Context, gomock.Not(gomock.Nil()), client.InNamespace(testNamespace), client.MatchingFields{"metadata.name": configMapName}).
+		List(fluentd.Context, gomock.Not(gomock.Nil()), client.InNamespace(testNamespace), client.MatchingFields{"metadata.name": configMapName + "-test"}).
 		DoAndReturn(func(ctx context.Context, resources *unstructured.UnstructuredList, inNamespace client.InNamespace, fields client.MatchingFields) error {
 			asserts.Equal(t, client.InNamespace(testNamespace), inNamespace)
-			asserts.Equal(t, client.MatchingFields{"metadata.name": configMapName}, fields)
+			asserts.Equal(t, client.MatchingFields{"metadata.name": configMapName + "-test"}, fields)
 			asserts.Equal(t, configMapAPIVersion, resources.GetAPIVersion())
 			asserts.Equal(t, configMapKind, resources.GetKind())
 
@@ -125,7 +125,7 @@ func TestFluentdRemove(t *testing.T) {
 	mocker := gomock.NewController(t)
 	mockClient := mocks.NewMockClient(mocker)
 
-	fluentd := &Fluentd{mockClient, ctrl.Log, context.Background(), testParseRules, testStorageName, scratchVolMountPath}
+	fluentd := &Fluentd{mockClient, ctrl.Log, context.Background(), testParseRules, testStorageName, scratchVolMountPath, "test"}
 	scope := createTestLoggingScope(true)
 	resource := createTestResourceRelation()
 	fluentdPod := createTestFluentdPod()
@@ -133,10 +133,10 @@ func TestFluentdRemove(t *testing.T) {
 
 	// simulate config map existing
 	mockClient.EXPECT().
-		List(fluentd.Context, gomock.Not(gomock.Nil()), client.InNamespace(testNamespace), client.MatchingFields{"metadata.name": configMapName}).
+		List(fluentd.Context, gomock.Not(gomock.Nil()), client.InNamespace(testNamespace), client.MatchingFields{"metadata.name": configMapName + "-test"}).
 		DoAndReturn(func(ctx context.Context, resources *unstructured.UnstructuredList, inNamespace client.InNamespace, fields client.MatchingFields) error {
 			asserts.Equal(t, client.InNamespace(testNamespace), inNamespace)
-			asserts.Equal(t, client.MatchingFields{"metadata.name": configMapName}, fields)
+			asserts.Equal(t, client.MatchingFields{"metadata.name": configMapName + "-test"}, fields)
 			asserts.Equal(t, configMapAPIVersion, resources.GetAPIVersion())
 			asserts.Equal(t, configMapKind, resources.GetKind())
 

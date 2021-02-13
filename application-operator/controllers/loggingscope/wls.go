@@ -163,6 +163,7 @@ func GetFluentd(ctx context.Context, log logr.Logger, client k8sclient.Client) F
 		ParseRules:             WlsFluentdParsingRules,
 		StorageVolumeName:      storageVolumeName,
 		StorageVolumeMountPath: storageVolumeMountPath,
+		WorkloadType:           "wls",
 	}
 }
 
