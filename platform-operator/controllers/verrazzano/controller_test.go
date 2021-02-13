@@ -1568,7 +1568,7 @@ func TestBuildIngressIPForXIPNodePort(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "default.127.0.0.1.xip.io", suffix)
+	assert.Equal(t, "default.127.0.0.1.nip.io", suffix)
 
 	// Validate the results
 	mocker.Finish()
@@ -1605,7 +1605,7 @@ func TestBuildIngressIPForXIPLoadBalancer(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "default.11.22.33.44.xip.io", suffix)
+	assert.Equal(t, "default.11.22.33.44.nip.io", suffix)
 
 	// Validate the results
 	mocker.Finish()
@@ -1700,7 +1700,7 @@ func TestBuildIngressIPForXIPLoadBalancerOLCNE(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, "default.11.22.33.44.xip.io", suffix)
+	assert.Equal(t, "default.11.22.33.44.nip.io", suffix)
 
 	// Validate the results
 	mocker.Finish()

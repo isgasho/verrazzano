@@ -530,7 +530,7 @@ func buildAppHostName(cli client.Reader, trait *vzapi.IngressTrait) (string, err
 	domain := strings.TrimSpace(segs[0])
 
 	// If this is xip.io then build the domain name using Istio info
-	if strings.HasSuffix(domain, "xip.io") {
+	if strings.HasSuffix(domain, "nip.io") {
 		domain, err = buildDomainNameForXIPIO(cli, trait)
 		if err != nil {
 			return "", err
@@ -573,6 +573,6 @@ func buildDomainNameForXIPIO(cli client.Reader, trait *vzapi.IngressTrait) (stri
 	} else {
 		return "", fmt.Errorf("Unsupported service type %s for istio_ingress", string(istio.Spec.Type))
 	}
-	domain := IP + "." + "xip.io"
+	domain := IP + "." + "nip.io"
 	return domain, nil
 }

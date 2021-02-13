@@ -648,7 +648,7 @@ func buildDomainSuffix(c client.Client, vz *installv1alpha1.Verrazzano) (string,
 	if err != nil {
 		return "", err
 	}
-	return ipAddress + ".xip.io", nil
+	return ipAddress + ".nip.io", nil
 }
 
 // getIngressIP get the Ingress IP, used for the xip.io case

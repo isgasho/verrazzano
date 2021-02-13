@@ -340,9 +340,6 @@ pipeline {
                             cd ${GO_REPO_PATH}/verrazzano
                             ./tests/e2e/config/scripts/install-metallb.sh
 
-                            ## TESTING ##
-                            dig anything.127.0.0.1.xip.io
-
                             echo "Create Image Pull Secrets"
                             cd ${GO_REPO_PATH}/verrazzano
                             ./tests/e2e/config/scripts/create-image-pull-secret.sh "${IMAGE_PULL_SECRET}" "${DOCKER_REPO}" "${DOCKER_CREDS_USR}" "${DOCKER_CREDS_PSW}"

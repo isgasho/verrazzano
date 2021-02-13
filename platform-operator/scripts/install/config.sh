@@ -191,7 +191,7 @@ function get_dns_suffix {
   local ingress_ip=$1
   local dns_type=$(get_config_value ".dns.type")
   if [ $dns_type == "xip.io" ]; then
-    dns_suffix="${ingress_ip}".xip.io
+    dns_suffix="${ingress_ip}".nip.io
   elif [ $dns_type == "oci" ]; then
     dns_suffix=$(get_config_value ".dns.oci.dnsZoneName")
   elif [ $dns_type == "external" ]; then

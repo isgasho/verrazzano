@@ -709,7 +709,7 @@ func TestBuildAppHostNameLoadBalancerXIP(t *testing.T) {
 			ingress.ObjectMeta = metav1.ObjectMeta{
 				Namespace:   name.Namespace,
 				Name:        name.Name,
-				Annotations: map[string]string{"nginx.ingress.kubernetes.io/auth-realm": "1.2.3.4.xip.io auth"}}
+				Annotations: map[string]string{"nginx.ingress.kubernetes.io/auth-realm": "1.2.3.4.nip.io auth"}}
 			return nil
 		})
 
@@ -732,7 +732,7 @@ func TestBuildAppHostNameLoadBalancerXIP(t *testing.T) {
 	// Validate the results
 	mocker.Finish()
 	assert.NoError(err)
-	assert.Equal("myapp.myns.5.6.7.8.xip.io", domainName)
+	assert.Equal("myapp.myns.5.6.7.8.nip.io", domainName)
 }
 
 // TestFailureBuildAppHostNameLoadBalancerXIP tests a failure when building a hostname for the application
@@ -764,7 +764,7 @@ func TestFailureBuildAppHostNameLoadBalancerXIP(t *testing.T) {
 			ingress.ObjectMeta = metav1.ObjectMeta{
 				Namespace:   name.Namespace,
 				Name:        name.Name,
-				Annotations: map[string]string{"nginx.ingress.kubernetes.io/auth-realm": "1.2.3.4.xip.io auth"}}
+				Annotations: map[string]string{"nginx.ingress.kubernetes.io/auth-realm": "1.2.3.4.nip.io auth"}}
 			return nil
 		})
 
@@ -816,7 +816,7 @@ func TestBuildAppHostNameNodePortXIP(t *testing.T) {
 			ingress.ObjectMeta = metav1.ObjectMeta{
 				Namespace:   name.Namespace,
 				Name:        name.Name,
-				Annotations: map[string]string{"nginx.ingress.kubernetes.io/auth-realm": "1.2.3.4.xip.io auth"}}
+				Annotations: map[string]string{"nginx.ingress.kubernetes.io/auth-realm": "1.2.3.4.nip.io auth"}}
 			return nil
 		})
 
@@ -848,7 +848,7 @@ func TestBuildAppHostNameNodePortXIP(t *testing.T) {
 	// Validate the results
 	mocker.Finish()
 	assert.NoError(err)
-	assert.Equal("myapp.myns.5.6.7.8.xip.io", domainName)
+	assert.Equal("myapp.myns.5.6.7.8.nip.io", domainName)
 }
 
 // TestFailureBuildAppHostNameNodePortXIP tests a failure when building a hostname for the application
@@ -880,7 +880,7 @@ func TestFailureBuildAppHostNameNodePortXIP(t *testing.T) {
 			ingress.ObjectMeta = metav1.ObjectMeta{
 				Namespace:   name.Namespace,
 				Name:        name.Name,
-				Annotations: map[string]string{"nginx.ingress.kubernetes.io/auth-realm": "1.2.3.4.xip.io auth"}}
+				Annotations: map[string]string{"nginx.ingress.kubernetes.io/auth-realm": "1.2.3.4.nip.io auth"}}
 			return nil
 		})
 
