@@ -12,7 +12,7 @@ pipeline {
     agent {
        docker {
             image "${RUNNER_DOCKER_IMAGE}"
-            args "${RUNNER_DOCKER_ARGS}"
+            args "${RUNNER_DOCKER_ARGS} --dns=8.8.8.8"
             registryUrl "${RUNNER_DOCKER_REGISTRY_URL}"
             registryCredentialsId 'ocir-pull-and-push-account'
             label "VM.Standard2.8"
