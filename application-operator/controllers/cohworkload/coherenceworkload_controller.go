@@ -332,7 +332,7 @@ func moveConfigMapVolume(log logr.Logger, fluentdPod *loggingscope.FluentdPod, c
 			fluentdVolMount = container.VolumeMounts[0]
 			// Coherence needs the vol mount to match the config map name, so fix it, need
 			// to see if we can just change name set by the FLUENTD code
-			fluentdVolMount.Name = "fluentd-config"
+			fluentdVolMount.Name = "fluentd-config-coherence"
 			fluentdPod.Containers[0].VolumeMounts = nil
 			break
 		}
