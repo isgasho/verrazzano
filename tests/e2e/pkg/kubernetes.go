@@ -36,7 +36,17 @@ func GetKubeConfig() *restclient.Config {
 	if config == nil {
 		kubeconfig := ""
 		// if the KUBECONFIG environment variable is set, use that
-		kubeconfigEnvVar := os.Getenv("KUBECONFIG")
+		// kubeconfigEnvVar := os.Getenv("KUBECONFIG")
+		kubeconfigEnvVar := ""
+		testKubeConfigEnvVar := os.Getenv("TEST_KUBECONFIG")
+		if len(testKubeConfigEnvVar) > 0 {
+			kubeconfigEnvVar = testKubeConfigEnvVar
+		}
+
+		if kubeconfigEnvVar == "" {
+			// if the KUBECONFIG environment variable is set, use that
+			kubeconfigEnvVar = os.Getenv("KUBECONFIG")
+		}
 		if len(kubeconfigEnvVar) > 0 {
 			kubeconfig = kubeconfigEnvVar
 		} else if home := homedir.HomeDir(); home != "" {
@@ -282,6 +292,19 @@ func GetNamespace(name string) (*corev1.Namespace, error) {
 
 // CreateNamespace creates a namespace
 func CreateNamespace(name string, labels map[string]string) (*corev1.Namespace, error) {
+	existingNamespace, err := GetNamespace(name)
+	if existingNamespace != nil && existingNamespace.Name == name {
+		return existingNamespace, nil
+	}
+
+	if errors.IsForbidden(err) && len(os.Getenv("TEST_KUBECONFIG")) > 0 {
+		Log(Info, fmt.Sprintf("CreateNamespace %s error: %v, ignoring since running with custom serviceaccount.", name, err))
+		return &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+			},
+		}, nil
+	}
 	// Get the kubernetes clientset
 	clientset := GetKubernetesClientset()
 
@@ -303,6 +326,10 @@ func DeleteNamespace(name string) error {
 	// Get the kubernetes clientset
 	clientset := GetKubernetesClientset()
 	err := clientset.CoreV1().Namespaces().Delete(context.TODO(), name, metav1.DeleteOptions{})
+	if err != nil && errors.IsForbidden(err) && len(os.Getenv("TEST_KUBECONFIG")) > 0 {
+		Log(Info, fmt.Sprintf("DeleteNamespace %s error: %v, ignoring since running with custom serviceaccount.", name, err))
+		return nil
+	}
 	if err != nil {
 		Log(Error, fmt.Sprintf("DeleteNamespace %s error: %v", name, err))
 	}

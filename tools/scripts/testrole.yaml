@@ -1,0 +1,37 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: verrazzano-test-role
+rules:
+  - apiGroups:
+      - '*'
+    resources:
+      - pods
+      - pods/status
+      - ingresses
+      - services
+      - secrets
+      - customresourcedefinitions
+      - verrazzanomonitoringinstances
+      - verrazzanomanagedclusters
+      - certificates
+      - gateways
+      - namespaces
+      - deployments
+      - destinationrules
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - '*'
+    resources:
+      # Access to create secrets, bobs-books and todo-list test create docker reg secret
+      - secrets
+    verbs:
+      - create
+      - update
+      - delete
+
+
+
