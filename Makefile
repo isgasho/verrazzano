@@ -48,9 +48,9 @@ copyright-check:
 
 .PHONY: copyright-check-local-changes
 copyright-check-local-changes:
-	go run tools/copyright/copyright.go $(shell git status --short | cut -c 4-)
+	go run tools/copyright/copyright.go --enforce-current  $(shell git status --short | cut -c 4-)
 
 .PHONY: copyright-check-branch-changes
 copyright-check-branch-changes:
-	go run tools/copyright/copyright.go $(shell git diff --name-only ${PARENT_BRANCH})
+	go run tools/copyright/copyright.go --enforce-current --verbose $(shell git diff --name-only ${PARENT_BRANCH})
 

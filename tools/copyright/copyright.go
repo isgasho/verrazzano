@@ -6,11 +6,16 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/csv"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // This program will accept a list of files and directories and scan all of the files found therin to make sure that
@@ -108,27 +113,50 @@ var (
 	// Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 	uplRegex = regexp.MustCompile(`^(#|\/\/|<!--|\/\*|<%--) Licensed under the Universal Permissive License v 1\.0 as shown at https:\/\/oss\.oracle\.com\/licenses\/upl(\.|\. -->|\. \*\/|\. --%>)$`)
 
-	// filesWithErrors List to track files that failed the check
-	filesWithErrors = []string{}
+	// filesWithErrors Map to track files that failed the check with their error messages
+	filesWithErrors map[string][]string
+
 	// numFilesAnalyzed Total number of files analyzed
-	numFilesAnalyzed int32 = 0
+	numFilesAnalyzed uint = 0
+
 	// numFilesSkipped Total number of files skipped
-	numFilesSkipped int32 = 0
+	numFilesSkipped uint = 0
+
 	// numDirectoriesSkipped Total number of directories skipped
-	numDirectoriesSkipped int32 = 0
+	numDirectoriesSkipped uint = 0
 
 	// filesToIgnore Files to ignore
 	filesToIgnore = []string{}
 
 	// directoriesToIgnore Directories to ignore
 	directoriesToIgnore = []string{}
+
+	// enforceCurrentYear Enforce that the current year is present in the copyright string (for modified files checks)
+	enforceCurrentYear = false
+
+	// currentYear Holds the current year string if we are enforcing that
+	currentYear string
+
+	// verbose If true enables verbose output
+	verbose = false
 )
 
 func main() {
-	args := os.Args
-	if len(args) < 2 {
+
+	flag.BoolVar(&enforceCurrentYear, "enforce-current", false, "Enforce the current year is present")
+	flag.BoolVar(&verbose, "verbose", false, "Verbose output")
+	flag.Parse()
+
+	args := flag.Args()
+	if len(args) < 1 {
 		printUsage()
 		return
+	}
+
+	if enforceCurrentYear {
+		year, _, _ := time.Now().Date()
+		currentYear = strconv.Itoa(year) + ", "
+		fmt.Println("Enforcing current year in copyright string")
 	}
 
 	if err := loadIgnoreFile(); err != nil {
@@ -136,10 +164,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	filesWithErrors = make(map[string][]string, 10)
+
 	// Arguments are a list of directories and/or files.  Iterate through each one and
 	// - if it's a file,scan it
 	// - if it's a dir, walk it and scan it recursively
-	for _, arg := range args[1:] {
+	for _, arg := range args {
 		fmt.Println(fmt.Sprintf("Copyright scanner scanning %s", arg))
 		argInfo, err := os.Stat(arg)
 		if err != nil {
@@ -177,19 +207,11 @@ func main() {
 // skipOrIgnoreDir Returns true if a directory matches the skip or ignore lists
 func skipOrIgnoreDir(relativeName string, path string) bool {
 	if contains(directoriesToSkip, relativeName) || contains(directoriesToIgnore, path) {
-		fmt.Println(fmt.Sprintf("Ignoring %s", path))
+		if verbose {
+			fmt.Println(fmt.Sprintf("Ignoring %s", path))
+		}
 		numDirectoriesSkipped++
 		return true
-	}
-	return false
-}
-
-// contains Search a list of strings for a value
-func contains(strings []string, value string) bool {
-	for i, _ := range strings {
-		if value == strings[i] {
-			return true
-		}
 	}
 	return false
 }
@@ -204,37 +226,44 @@ func checkFile(path string, info os.FileInfo) error {
 		contains(filesToSkip, info.Name()) ||
 		contains(filesToIgnore, path)  {
 		numFilesSkipped++
-		fmt.Println(fmt.Sprintf("Ignoring %s", path))
+		if verbose {
+			fmt.Println(fmt.Sprintf("Ignoring %s", path))
+		}
 		return nil
 	}
 
 	numFilesAnalyzed++
-	copyrightFound, licenseFound, err := hasValidCopyright(path)
+	fileErrors, err := hasValidCopyright(path)
 	if err != nil {
 		return err
 	}
-	if !copyrightFound || !licenseFound {
-		// append to failed list
-		filesWithErrors = append(filesWithErrors, path)
+	if len(fileErrors) > 0 {
+		filesWithErrors[path] = fileErrors
 	}
 	return nil
 }
 
 // hasValidCopyright returns true if the file has a valid/correct copyright notice
-func hasValidCopyright(path string) (foundCopyright bool, foundLicense bool, err error) {
+func hasValidCopyright(path string) (fileErrors[]string,  err error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return false, false, err
+		return fileErrors, err
 	}
 	reader := bufio.NewScanner(file)
 	reader.Split(bufio.ScanLines)
 	defer file.Close()
+
+	foundCopyright := false
+	foundLicense := false
 
 	linesRead := 0
 	for reader.Scan() && linesRead < maxLines {
 		line := reader.Text()
 		if copyrightRegex.MatchString(line) {
 			foundCopyright = true
+			if enforceCurrentYear && !strings.Contains(line, currentYear) {
+				fileErrors = append(fileErrors,"Copyright does not contain current year")
+			}
 		}
 		if uplRegex.MatchString(line) {
 			foundLicense = true
@@ -244,7 +273,13 @@ func hasValidCopyright(path string) (foundCopyright bool, foundLicense bool, err
 		}
 		linesRead++
 	}
-	return foundCopyright, foundLicense, nil
+	if !foundCopyright {
+		fileErrors = append(fileErrors,"Copyright not found")
+	}
+	if !foundLicense {
+		fileErrors = append(fileErrors,"License not found")
+	}
+	return fileErrors, nil
 }
 
 func printScanReport() {
@@ -252,9 +287,14 @@ func printScanReport() {
 	 numFilesAnalyzed, len(filesWithErrors), numFilesSkipped, numDirectoriesSkipped);
 
 	if len(filesWithErrors) > 0 {
-		fmt.Println("The following files have errors:\n")
-		for _, fileWithError := range filesWithErrors {
-			fmt.Println(fileWithError)
+		fmt.Println("\nThe following files have errors:\n")
+		for path, errors := range filesWithErrors {
+			buff := new(bytes.Buffer)
+			writer := csv.NewWriter(buff)
+			writer.Write(errors)
+			writer.Flush()
+
+			fmt.Printf("\tFile: %s, Errors: %s\n", path, buff.String())
 		}
 
 		fmt.Println("\nExamples of valid comments:")
@@ -313,10 +353,21 @@ func loadIgnoreFile() error {
 
 	fmt.Printf("Files to ignore: %v\n", filesToIgnore)
 	fmt.Printf("Directories to ignore: %v\n", directoriesToIgnore)
+	fmt.Println()
 	return nil
 }
 
+// contains Search a list of strings for a value
+func contains(strings []string, value string) bool {
+	for i, _ := range strings {
+		if value == strings[i] {
+			return true
+		}
+	}
+	return false
+}
+
 func printUsage() {
-	fmt.Println("Copyright scanner")
-	fmt.Println("Specify a list of files and or directories to scan")
+	fmt.Println("Provide a list of files and/or directories to scan\n")
+	fmt.Println("go run copyright.go [--enforce-current] [--verbose] path [path ... ]")
 }
