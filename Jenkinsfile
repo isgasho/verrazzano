@@ -200,6 +200,10 @@ pipeline {
                     make go-ineffassign
                     cd ${GO_REPO_PATH}/verrazzano/application-operator
                     make go-ineffassign
+
+                    echo "copyright"
+                    cd ${GO_REPO_PATH}/verrazzano
+                    make copyright-check
                 """
 
                 dir('platform-operator'){
@@ -210,10 +214,6 @@ pipeline {
                     echo "Third party license check application-operator"
                     thirdpartyCheck()
                 }
-                sh """
-                    echo "copyright"
-                """
-                copyrightScan "${WORKSPACE}"
             }
         }
 
