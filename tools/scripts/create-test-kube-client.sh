@@ -47,8 +47,6 @@ kubectl -n cert-manager create rolebinding ${TEST_ID}-${TEST_ROLE}-binding --clu
 kubectl -n cattle-system create rolebinding ${TEST_ID}-${TEST_ROLE}-binding --clusterrole=${TEST_ROLE} --serviceaccount=${TEST_NAMESPACE}:${TEST_ID}-sa
 kubectl -n ingress-nginx create rolebinding ${TEST_ID}-${TEST_ROLE}-binding --clusterrole=${TEST_ROLE} --serviceaccount=${TEST_NAMESPACE}:${TEST_ID}-sa
 kubectl -n keycloak create rolebinding ${TEST_ID}-${TEST_ROLE}-binding --clusterrole=${TEST_ROLE} --serviceaccount=${TEST_NAMESPACE}:${TEST_ID}-sa
-
-
 kubectl -n ${TEST_NAMESPACE} create rolebinding ${TEST_ID}-${TEST_ROLE}-binding --clusterrole=${TEST_ROLE} --serviceaccount=${TEST_NAMESPACE}:${TEST_ID}-sa
 kubectl -n ${TEST_NAMESPACE} create rolebinding ${TEST_ID}-${PROJECT_ADMIN_ROLE}-binding --clusterrole=${PROJECT_ADMIN_ROLE} --serviceaccount=${TEST_NAMESPACE}:${TEST_ID}-sa
 
@@ -62,9 +60,13 @@ if [[ -z "$secret" ]]; then
   exit 2
 fi
 
-context="$(kubectl config current-context)"
-cluster="$(kubectl config view -o "jsonpath={.contexts[?(@.name==\"$context\")].context.cluster}")"
-server="$(kubectl config view -o "jsonpath={.clusters[?(@.name==\"$cluster\")].cluster.server}")"
+mkdir -p /tmp/${TEST_ID}-kubeconfig
+cp ${KUBECONFIG} /tmp/${TEST_ID}-kubeconfig/kubeconfig
+context="$(KUBECONFIG=/tmp/$TEST_ID-kubeconfig/kubeconfig kubectl config current-context)"
+cluster="$(KUBECONFIG=/tmp/$TEST_ID-kubeconfig/kubeconfig kubectl config view -o "jsonpath={.contexts[?(@.name==\"$context\")].context.cluster}")"
+server="$(KUBECONFIG=/tmp/$TEST_ID-kubeconfig/kubeconfig kubectl config view -o "jsonpath={.clusters[?(@.name==\"$cluster\")].cluster.server}")"
+rm -rf /tmp/${TEST_ID}-kubeconfig
+
 ca_crt_data="$(kubectl -n $TEST_NAMESPACE get secret "$secret" -o "jsonpath={.data.ca\.crt}" | openssl enc -d -base64 -A)"
 namespace="$(kubectl -n $TEST_NAMESPACE get secret "$secret" -o "jsonpath={.data.namespace}" | openssl enc -d -base64 -A)"
 token="$(kubectl -n $TEST_NAMESPACE get secret "$secret" -o "jsonpath={.data.token}" | openssl enc -d -base64 -A)"

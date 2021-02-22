@@ -36,7 +36,6 @@ func GetKubeConfig() *restclient.Config {
 	if config == nil {
 		kubeconfig := ""
 		// if the KUBECONFIG environment variable is set, use that
-		// kubeconfigEnvVar := os.Getenv("KUBECONFIG")
 		kubeconfigEnvVar := ""
 		testKubeConfigEnvVar := os.Getenv("TEST_KUBECONFIG")
 		if len(testKubeConfigEnvVar) > 0 {
