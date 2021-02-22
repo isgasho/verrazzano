@@ -201,7 +201,7 @@ pipeline {
                     cd ${GO_REPO_PATH}/verrazzano/application-operator
                     make go-ineffassign
 
-                    echo "copyright"
+                    echo "copyright scan"
                     cd ${GO_REPO_PATH}/verrazzano
                     make copyright-check
                 """
