@@ -60,7 +60,7 @@ pipeline {
         WEBLOGIC_PSW = credentials('weblogic-example-domain-password') // Needed by ToDoList example test
         DATABASE_PSW = credentials('todo-mysql-password') // Needed by ToDoList example test
 
-        COPYRIGHT_SCAN_TARGET = "${env.BRANCH_NAME == 'master' ? copyright-check : copyright-check-branch-changes}"
+        COPYRIGHT_SCAN_TARGET = "${env.BRANCH_NAME == 'master' ? 'copyright-check' : 'copyright-check-branch-changes'}"
     }
 
     stages {
