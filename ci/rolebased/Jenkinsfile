@@ -466,8 +466,21 @@ pipeline {
                                     }
                                 }
                                 stage('verify-install kubernetes') {
+                                    environment {
+                                        TEST_ID = UUID.randomUUID().toString()
+                                        TEST_NAMESPACE = "installkubernetes"
+                                        TEST_KUBECONFIG= "/tmp/" + "${TEST_ID}"
+                                    }
                                     steps {
-                                        runGinkgoRandomize('verify-install/kubernetes')
+                                        runGinkgoWithKubeClient('verify-install/kubernetes')
+                                    }
+                                    post {
+                                        always {
+                                            sh """
+                                                cd ${GO_REPO_PATH}/verrazzano
+                                                ./tools/scripts/remove-test-kube-client.sh
+                                            """
+                                        }
                                     }
                                 }
                                 stage('verify-infra restapi') {
@@ -507,8 +520,21 @@ pipeline {
                                     }
                                 }
                                 stage('verify-infra vmi') {
+                                    environment {
+                                        TEST_ID = UUID.randomUUID().toString()
+                                        TEST_NAMESPACE = "infravmi"
+                                        TEST_KUBECONFIG= "/tmp/" + "${TEST_ID}"
+                                    }
                                     steps {
                                         runGinkgoRandomize('verify-infra/vmi')
+                                    }
+                                    post {
+                                        always {
+                                            sh """
+                                                cd ${GO_REPO_PATH}/verrazzano
+                                                ./tools/scripts/remove-test-kube-client.sh
+                                            """
+                                        }
                                     }
                                 }
                                 stage('examples todo') {

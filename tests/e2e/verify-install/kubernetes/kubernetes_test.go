@@ -4,6 +4,7 @@
 package kubernetes_test
 
 import (
+	"os"
 	"time"
 
 	"github.com/onsi/ginkgo"
@@ -57,23 +58,28 @@ var _ = ginkgo.Describe("Kubernetes Cluster",
 
 		ginkgo.It("has the expected namespaces",
 			func() {
-				namespaces := pkg.ListNamespaces()
-				gomega.Expect(nsListContains(namespaces.Items, "cattle-global-data")).To(gomega.Equal(true))
-				gomega.Expect(nsListContains(namespaces.Items, "cattle-global-nt")).To(gomega.Equal(true))
-				gomega.Expect(nsListContains(namespaces.Items, "cattle-system")).To(gomega.Equal(true))
-				gomega.Expect(nsListContains(namespaces.Items, "istio-system")).To(gomega.Equal(true))
-				gomega.Expect(nsListContains(namespaces.Items, "gitlab")).To(gomega.Equal(false))
-				gomega.Expect(nsListContains(namespaces.Items, "keycloak")).To(gomega.Equal(true))
-				gomega.Expect(nsListContains(namespaces.Items, "local")).To(gomega.Equal(true))
-				gomega.Expect(nsListContains(namespaces.Items, "verrazzano-system")).To(gomega.Equal(true))
-				gomega.Expect(nsListContains(namespaces.Items, "verrazzano-mc")).To(gomega.Equal(true))
-				gomega.Expect(nsListContains(namespaces.Items, "cert-manager")).To(gomega.Equal(true))
-				gomega.Expect(nsListContains(namespaces.Items, "ingress-nginx")).To(gomega.Equal(true))
+				// if the KUBECONFIG environment variable is set, don't run the test
+				if len(os.Getenv("TEST_KUBECONFIG")) > 0 {
+					gomega.Expect(true).Should(gomega.BeTrue())
+				} else {
+					namespaces := pkg.ListNamespaces()
+					gomega.Expect(nsListContains(namespaces.Items, "cattle-global-data")).To(gomega.Equal(true))
+					gomega.Expect(nsListContains(namespaces.Items, "cattle-global-nt")).To(gomega.Equal(true))
+					gomega.Expect(nsListContains(namespaces.Items, "cattle-system")).To(gomega.Equal(true))
+					gomega.Expect(nsListContains(namespaces.Items, "istio-system")).To(gomega.Equal(true))
+					gomega.Expect(nsListContains(namespaces.Items, "gitlab")).To(gomega.Equal(false))
+					gomega.Expect(nsListContains(namespaces.Items, "keycloak")).To(gomega.Equal(true))
+					gomega.Expect(nsListContains(namespaces.Items, "local")).To(gomega.Equal(true))
+					gomega.Expect(nsListContains(namespaces.Items, "verrazzano-system")).To(gomega.Equal(true))
+					gomega.Expect(nsListContains(namespaces.Items, "verrazzano-mc")).To(gomega.Equal(true))
+					gomega.Expect(nsListContains(namespaces.Items, "cert-manager")).To(gomega.Equal(true))
+					gomega.Expect(nsListContains(namespaces.Items, "ingress-nginx")).To(gomega.Equal(true))
 
-				// dump out namespace data to file
-				logData := ""
-				for i := range namespaces.Items {
-					logData = logData + namespaces.Items[i].Name + "\n"
+					// dump out namespace data to file
+					logData := ""
+					for i := range namespaces.Items {
+						logData = logData + namespaces.Items[i].Name + "\n"
+					}
 				}
 			})
 

@@ -22,6 +22,8 @@ rules:
       - namespaces
       - deployments
       - destinationrules
+      - verrazzanomonitoringinstances
+      - certificates
     verbs:
       - get
       - list
