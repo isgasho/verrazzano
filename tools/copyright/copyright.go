@@ -44,7 +44,6 @@ var (
 			"THIRD_PARTY_LICENSES.txt",
 			"coverage.html",
 			"clair-scanner",
-			".DS_Store",
 	}
 
 	// directoriesToShip is a list of well-known (sub)directories to skip while scanning, relative to the working
@@ -54,7 +53,6 @@ var (
 		"out",
 		"bin",
 		".github",
-		".idea",
 		".settings",
 		"thirdparty_licenses",
 		"vendor",
