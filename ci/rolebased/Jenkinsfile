@@ -526,7 +526,7 @@ pipeline {
                                         TEST_KUBECONFIG= "/tmp/" + "${TEST_ID}"
                                     }
                                     steps {
-                                        runGinkgoRandomize('verify-infra/vmi')
+                                        runGinkgoWithKubeClient('verify-infra/vmi')
                                     }
                                     post {
                                         always {
