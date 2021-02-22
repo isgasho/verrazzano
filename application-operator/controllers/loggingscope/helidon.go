@@ -92,12 +92,11 @@ const HelidonFluentdConfiguration = `<label @FLUENT_LOG>
 </filter>
 <match **>
   @type elasticsearch
-  host "#{ENV['ELASTICSEARCH_HOST']}"
-  port "#{ENV['ELASTICSEARCH_PORT']}"
+  hosts "#{ENV['ELASTICSEARCH_URL']}"
+  ca_file "#{ENV['ELASTICSEARCH_CA_BUNDLE']}"
   user "#{ENV['ELASTICSEARCH_USER']}"
   password "#{ENV['ELASTICSEARCH_PASSWORD']}"
   index_name "` + ElasticSearchIndex + `"
-  scheme http
   include_timestamp true
   flush_interval 10s
 </match>
@@ -138,7 +137,7 @@ func (h *HelidonHandler) Apply(ctx context.Context, workload vzapi.QualifiedReso
 		deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, volume)
 	}
 	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, CreateFluentdConfigMapVolume(workload.Name))
-	fluentdContainer := CreateFluentdContainer(workload.Namespace, workload.Name, appContainer, scope.Spec.FluentdImage, scope.Spec.SecretName, scope.Spec.ElasticSearchHost)
+	fluentdContainer := CreateFluentdContainer(workload.Namespace, workload.Name, appContainer, scope.Spec.FluentdImage, scope.Spec.SecretName, scope.Spec.ElasticSearchURL)
 	deploy.Spec.Template.Spec.Containers = append(deploy.Spec.Template.Spec.Containers, fluentdContainer)
 	err = h.Update(ctx, deploy)
 	if err != nil {
@@ -228,7 +227,7 @@ func CreateFluentdConfigMap(namespace, name, fluentdConfig string) *kcore.Config
 }
 
 // CreateFluentdContainer creates a FLUENTD sidecar container.
-func CreateFluentdContainer(namespace, workloadName, containerName, fluentdImage, esSecret, esHost string) kcore.Container {
+func CreateFluentdContainer(namespace, workloadName, containerName, fluentdImage, esSecret, esURL string) kcore.Container {
 	container := kcore.Container{
 		Name:            fluentdContainerName,
 		Args:            []string{"-c", "/etc/fluent.conf"},
@@ -272,15 +271,11 @@ func CreateFluentdContainer(namespace, workloadName, containerName, fluentdImage
 				},
 			},
 			{
-				Name:  "ELASTICSEARCH_HOST",
-				Value: esHost,
+				Name:  elasticSearchURLField,
+				Value: esURL,
 			},
 			{
-				Name:  "ELASTICSEARCH_PORT",
-				Value: "9200",
-			},
-			{
-				Name: "ELASTICSEARCH_USER",
+				Name: elasticSearchUserField,
 				ValueFrom: &kcore.EnvVarSource{
 					SecretKeyRef: &kcore.SecretKeySelector{
 						LocalObjectReference: kcore.LocalObjectReference{
@@ -294,7 +289,7 @@ func CreateFluentdContainer(namespace, workloadName, containerName, fluentdImage
 				},
 			},
 			{
-				Name: "ELASTICSEARCH_PASSWORD",
+				Name: elasticSearchPwdField,
 				ValueFrom: &kcore.EnvVarSource{
 					SecretKeyRef: &kcore.SecretKeySelector{
 						LocalObjectReference: kcore.LocalObjectReference{
