@@ -18,6 +18,8 @@ VERRAZZANO_APPLICATION_OPERATOR_IMAGE_NAME ?= verrazzano-application-operator-de
 VERRAZZANO_PLATFORM_OPERATOR_IMAGE = ${DOCKER_REPO}/${DOCKER_NAMESPACE}/${VERRAZZANO_PLATFORM_OPERATOR_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 VERRAZZANO_APPLICATION_OPERATOR_IMAGE = ${DOCKER_REPO}/${DOCKER_NAMESPACE}/${VERRAZZANO_APPLICATION_OPERATOR_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
+PARENT_BRANCH ?= origin/master
+
 .PHONY: docker-push
 docker-push:
 	(cd application-operator; make docker-push DOCKER_IMAGE_NAME=${VERRAZZANO_APPLICATION_OPERATOR_IMAGE_NAME} DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG})
@@ -44,7 +46,11 @@ test-platform-operator-install-logs:
 copyright-check:
 	go run tools/copyright/copyright.go .
 
-.PHONY: copyright-check-changes
-copyright-check-changes:
+.PHONY: copyright-check-local-changes
+copyright-check-local-changes:
 	go run tools/copyright/copyright.go $(shell git status --short | cut -c 4-)
+
+.PHONY: copyright-check-branch-changes
+copyright-check-branch-changes:
+	go run tools/copyright/copyright.go $(shell git diff --name-only ${PARENT_BRANCH})
 
