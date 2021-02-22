@@ -40,3 +40,11 @@ test-platform-operator-remove:
 test-platform-operator-install-logs:
 	kubectl logs -f -n default $(shell kubectl get pods -n default --no-headers | grep "^verrazzano-install-" | cut -d ' ' -f 1)
 
+.PHONY: copyright-check
+copyright-check:
+	go run tools/copyright/copyright.go .
+
+.PHONY: copyright-check-changes
+copyright-check-changes:
+	go run tools/copyright/copyright.go $(shell git status --short | cut -c 4-)
+
