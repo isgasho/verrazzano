@@ -1,7 +1,5 @@
 // Copyright (c) 2020, 2021, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
-// Originally written in Java by Mark Nelson translated to Go by Mark Nelson and Mike Cico.
-
 package main
 
 import (
