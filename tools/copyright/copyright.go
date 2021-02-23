@@ -50,7 +50,6 @@ var (
 		".git",
 		"out",
 		"bin",
-		".github",
 		".settings",
 		"thirdparty_licenses",
 		"vendor",
