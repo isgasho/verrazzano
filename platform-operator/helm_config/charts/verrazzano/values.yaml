@@ -65,6 +65,7 @@ monitoringOperator:
   monitoringInstanceApiImage: ghcr.io/verrazzano/verrazzano-monitoring-instance-api:0.10.0-20210206160701-e89d9a7
   configReloaderImage: ghcr.io/verrazzano/configmap-reload:0.3-20201016205243-4f24a0e
   nodeExporterImage: ghcr.io/verrazzano/node-exporter:0.18.1-20201016212926-e3dc9ad
+  oidcProxyImage: ghcr.io/verrazzano/nginx-ingress-controller:0.32-20210122132046-a84f6166a
   RequestMemory: 48Mi
 
 clusterOperator:
