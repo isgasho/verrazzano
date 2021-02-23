@@ -183,6 +183,7 @@ pipeline {
                                             echo ${CLUSTER_NAME_PREFIX}-$count
                                             echo ${KUBECONFIG_DIR}/$count/kube_config
                                             mkdir -p ${KUBECONFIG_DIR}/$count
+                                            export KUBECONFIG=${KUBECONFIG_DIR}/$count/kube_config
                                             echo "Create Kind cluster"
                                             cd ${TEST_SCRIPTS_DIR}
                                             ./create_kind_cluster.sh "${CLUSTER_NAME_PREFIX}-$count" "${GO_REPO_PATH}/verrazzano/platform-operator" "${KUBECONFIG_DIR}/$count/kube_config" "${KUBERNETES_CLUSTER_VERSION}"
