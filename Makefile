@@ -52,5 +52,5 @@ copyright-check-local-changes:
 
 .PHONY: copyright-check-branch-changes
 copyright-check-branch-changes:
-	go run tools/copyright/copyright.go --enforce-current --verbose $(shell git diff --name-only ${PARENT_BRANCH})
+	go run tools/copyright/copyright.go --enforce-current --verbose $(shell git diff --name-only --oneline ${PARENT_BRANCH})
 
