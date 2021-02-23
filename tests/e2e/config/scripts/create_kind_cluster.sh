@@ -27,7 +27,9 @@ create_kind_cluster() {
 
   cd ${PLATFORM_OPERATOR_DIR}/build/scripts
   ./cleanup.sh ${CLUSTER_NAME}
-
+  
+  export KUBECONFIG=$KUBECONFIG
+  echo "Kube config ${KUBECONFIG}"
   cd ${SCRIPT_DIR}/
   echo "KinD Image : ${KIND_IMAGE}"
   sed -i "s/KIND_IMAGE/${KIND_IMAGE}/g" kind-config.yaml
