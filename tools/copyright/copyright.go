@@ -166,9 +166,13 @@ func main() {
 	// - if it's a file,scan it
 	// - if it's a dir, walk it and scan it recursively
 	for _, arg := range args {
-		fmt.Println(fmt.Sprintf("Copyright scanner scanning %s", arg))
+		fmt.Println(fmt.Sprintf("Copyright scanning target %s", arg))
 		argInfo, err := os.Stat(arg)
 		if err != nil {
+			if os.IsNotExist(err) {
+				fmt.Printf("WARNING: %s does not exist, skipping\n", arg)
+				continue
+			}
 			fmt.Printf("Error getting file info for %s: %v", arg, err.Error())
 			os.Exit(1)
 		}
