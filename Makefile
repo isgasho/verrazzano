@@ -46,11 +46,11 @@ test-platform-operator-install-logs:
 copyright-check:
 	go run tools/copyright/copyright.go --verbose .
 
-.PHONY: copyright-check-local-changes
-copyright-check-local-changes:
+.PHONY: copyright-check-local
+copyright-check-local:
 	go run tools/copyright/copyright.go --verbose --enforce-current  $(shell git status --short | cut -c 4-)
 
-.PHONY: copyright-check-branch-changes
-copyright-check-branch-changes:
+.PHONY: copyright-check-branch
+copyright-check-branch:
 	go run tools/copyright/copyright.go --verbose --enforce-current $(shell git diff --name-only --oneline ${PARENT_BRANCH} --)
 

@@ -138,9 +138,17 @@ var (
 
 func main() {
 
+	help := false
+
 	flag.BoolVar(&enforceCurrentYear, "enforce-current", false, "Enforce the current year is present")
 	flag.BoolVar(&verbose, "verbose", false, "Verbose output")
+	flag.BoolVar(&help, "help", false, "Display usage help")
 	flag.Parse()
+
+	if help {
+		printUsage()
+		os.Exit(0)
+	}
 
 	args := flag.Args()
 	if len(args) < 1 {
@@ -371,6 +379,14 @@ func contains(strings []string, value string) bool {
 }
 
 func printUsage() {
-	fmt.Println("Provide a list of files and/or directories to scan\n")
-	fmt.Println("go run copyright.go [--enforce-current] [--verbose] path [path ... ]")
+	usageString :=`
+
+go run copyright.go [options] path1 [path2 path3 ...]
+
+Options:
+	--enforce-current   Enforce that files provided to the tool have the current year in the copyright
+	--verbose           Verbose output
+
+`
+	fmt.Println(usageString)
 }
