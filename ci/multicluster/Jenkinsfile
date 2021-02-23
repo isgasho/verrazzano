@@ -21,9 +21,9 @@ pipeline {
             args "${RUNNER_DOCKER_ARGS}"
             registryUrl "${RUNNER_DOCKER_REGISTRY_URL}"
             registryCredentialsId 'ocir-pull-and-push-account'
+            label "VM.Standard2.8"
         }
     }
-    // add label "VM.Standard2.8" to agent -> docker later
 
     parameters {
         choice (description: 'Number of Cluster', name: 'TOTAL_CLUSTERS',
