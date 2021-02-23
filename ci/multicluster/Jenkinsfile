@@ -186,20 +186,20 @@ pipeline {
                         stage('Create Cluster') {
                             steps {
                                 script {
-                                    clusterCount = params.TOTAL_CLUSTERS as Integer
-                                    sh """
-                                        mkdir -p ${KUBECONFIG_DIR}
-                                        if [ "${env.TEST_ENV}" == "kind" ]
-                                        then
+                                    int clusterCount = params.TOTAL_CLUSTERS.toInteger()
+                                    for(int count=1; count<=value; count++) {
+                                        sh """
+                                            echo ${CLUSTER_NAME_PREFIX}-$count
+                                            echo ${KUBECONFIG_DIR}/$count/kube_config
                                             echo "Create Kind cluster"
-                                            for((count=0; count<=clusterCount; ++count)) do
-                                              echo ${CLUSTER_NAME_PREFIX}-$count
-                                              echo ${KUBECONFIG_DIR}/$count/kube_config
-                                            done
-                                        else
-					                        echo "Create OKE cluster"
-                                        fi
-                                    """
+                                            cd ${TEST_SCRIPTS_DIR}
+                                            ./create_kind_cluster.sh "${CLUSTER_NAME_PREFIX}-$count" "${GO_REPO_PATH}/verrazzano/platform-operator" "${KUBECONFIG_DIR}/$count/kube_config" "${KUBERNETES_CLUSTER_VERSION}"
+
+                                            echo "Install metallb"
+                                            cd ${GO_REPO_PATH}/verrazzano
+                                            ./tests/e2e/config/scripts/install-metallb.sh
+                                        """
+                                    }
                                 }
                             }
                         }
@@ -210,15 +210,14 @@ pipeline {
     }
     post {
         always {
-            sh """
-                if [ "${TEST_ENV}" == "kind" ]; then
-                  echo "Delete KIND cluster"
-                  #cd ${GO_REPO_PATH}/verrazzano/platform-operator
-                  # make delete-cluster
-                else
-                  echo "Delete OKE cluster"
-                fi
-            """
+            script {
+                int clusterCount = params.TOTAL_CLUSTERS.toInteger()
+                for(int count=1; count<=value; count++) {
+                    sh """
+                        kind delete cluster --name ${CLUSTER_NAME_PREFIX}-$count
+                    """
+                }
+            }
             deleteDir()
         }
     }
