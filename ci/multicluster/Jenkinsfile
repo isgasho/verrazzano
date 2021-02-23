@@ -1,0 +1,225 @@
+// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+def DOCKER_IMAGE_TAG
+def SKIP_ACCEPTANCE_TESTS = false
+def availableRegions = [ "us-ashburn-1", "ap-chuncheon-1", "ap-hyderabad-1", "ap-melbourne-1", "ap-mumbai-1", "ap-osaka-1", "ap-seoul-1", "ap-sydney-1",
+                          "ap-tokyo-1", "ca-montreal-1", "ca-toronto-1", "eu-amsterdam-1", "eu-frankfurt-1", "eu-zurich-1", "me-jeddah-1",
+                          "sa-saopaulo-1", "uk-london-1", "us-phoenix-1" ]
+Collections.shuffle(availableRegions)
+def zoneId = UUID.randomUUID().toString().substring(0,3).replace('-','')
+def dns_zone_ocid = 'dummy'
+
+pipeline {
+    options {
+        skipDefaultCheckout true
+    }
+
+    agent {
+       docker {
+            image "${RUNNER_DOCKER_IMAGE}"
+            args "${RUNNER_DOCKER_ARGS}"
+            registryUrl "${RUNNER_DOCKER_REGISTRY_URL}"
+            registryCredentialsId 'ocir-pull-and-push-account'
+            label "VM.Standard2.8"
+        }
+    }
+
+    parameters {
+        choice (description: 'Number of Cluster', name: 'TOTAL_CLUSTERS',
+                        choices: ["1", "2", "3"])
+        choice (description: 'Verrazzano Test Environment', name: 'TEST_ENV',
+                choices: ["kind", "magicdns_oke", "ocidns_oke"])
+        choice (description: 'OCI region to launch OKE clusters', name: 'OKE_CLUSTER_REGION',
+            // 1st choice is the default value
+            choices: availableRegions )
+        choice (description: 'OKE node pool configuration', name: 'OKE_NODE_POOL',
+            // 1st choice is the default value
+            choices: [ "VM.Standard2.4-2", "VM.Standard.E3.Flex-8-2" ])
+        choice (description: 'Kubernetes Version for OKE Cluster', name: 'OKE_CLUSTER_VERSION',
+                // 1st choice is the default value
+                choices: [ "v1.17.13", "v1.18.10" ])
+        string defaultValue: 'dev', description: 'Verrazzano install profile name', name: "INSTALL_PROFILE", trim: true
+        booleanParam (description: 'Whether to dump k8s cluster on success (off by default can be useful to capture for comparing to failed cluster)', name: 'DUMP_K8S_CLUSTER_ON_SUCCESS', defaultValue: false)
+    }
+
+    environment {
+        DOCKER_PLATFORM_CI_IMAGE_NAME = 'verrazzano-platform-operator-jenkins'
+        DOCKER_PLATFORM_PUBLISH_IMAGE_NAME = 'verrazzano-platform-operator'
+        DOCKER_PLATFORM_IMAGE_NAME = "${env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'master' ? env.DOCKER_PLATFORM_PUBLISH_IMAGE_NAME : env.DOCKER_PLATFORM_CI_IMAGE_NAME}"
+        DOCKER_OAM_CI_IMAGE_NAME = 'verrazzano-application-operator-jenkins'
+        DOCKER_OAM_PUBLISH_IMAGE_NAME = 'verrazzano-application-operator'
+        DOCKER_OAM_IMAGE_NAME = "${env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'master' ? env.DOCKER_OAM_PUBLISH_IMAGE_NAME : env.DOCKER_OAM_CI_IMAGE_NAME}"
+        CREATE_LATEST_TAG = "${env.BRANCH_NAME == 'master' ? '1' : '0'}"
+        GOPATH = '/home/opc/go'
+        GO_REPO_PATH = "${GOPATH}/src/github.com/verrazzano"
+        DOCKER_CREDS = credentials('github-packages-credentials-rw')
+        DOCKER_EMAIL = credentials('github-packages-email')
+        DOCKER_REPO = 'ghcr.io'
+        DOCKER_NAMESPACE = 'verrazzano'
+        NETRC_FILE = credentials('netrc')
+        GITHUB_API_TOKEN = credentials('github-api-token-release-assets')
+        GITHUB_RELEASE_USERID = credentials('github-userid-release')
+        GITHUB_RELEASE_EMAIL = credentials('github-email-release')
+        SERVICE_KEY = credentials('PAGERDUTY_SERVICE_KEY')
+
+        CLUSTER_NAME_PREFIX = 'verrazzano'
+        POST_DUMP_FAILED_FILE = "${WORKSPACE}/post_dump_failed_file.tmp"
+        TESTS_EXECUTED_FILE = "${WORKSPACE}/tests_executed_file.tmp"
+
+        // TODO : FIX THIS
+        KUBECONFIG_DIR = "${WORKSPACE}/kubeconfig"
+        VERRAZZANO_KUBECONFIG = "${KUBECONFIG}"
+
+        OCR_CREDS = credentials('ocr-pull-and-push-account')
+        OCR_REPO = 'container-registry.oracle.com'
+        IMAGE_PULL_SECRET = 'verrazzano-container-registry'
+        INSTALL_CONFIG_FILE_KIND = "${GO_REPO_PATH}/verrazzano/tests/e2e/config/scripts/install-verrazzano-kind.yaml"
+
+        // WEBLOGIC_PSW = credentials('weblogic-example-domain-password') // Needed by ToDoList example test
+        // DATABASE_PSW = credentials('todo-mysql-password') // Needed by ToDoList example test
+
+        TEST_ENV = "${params.TEST_ENV}"
+        INSTALL_PROFILE = "${params.INSTALL_PROFILE}"
+
+        TF_VAR_tenancy_id = credentials('oci-tenancy')
+        TF_VAR_user_id = credentials('oci-user-ocid')
+        TF_VAR_region = "${params.OKE_CLUSTER_REGION}"
+        TF_VAR_kubernetes_version = "${params.OKE_CLUSTER_VERSION}"
+        TF_VAR_nodepool_config = "${params.OKE_NODE_POOL}"
+        TF_VAR_api_fingerprint = credentials('oci-api-key-fingerprint')
+        TF_VAR_api_private_key_path = credentials('oci-api-key')
+        TF_VAR_ssh_public_key_path = credentials('oci-tf-pub-ssh-key')
+        TF_VAR_compartment_id = credentials('oci-tiburon-dev-compartment-ocid')
+
+        OCI_CLI_TENANCY = credentials('oci-tenancy')
+        OCI_CLI_USER = credentials('oci-user-ocid')
+        OCI_CLI_FINGERPRINT = credentials('oci-api-key-fingerprint')
+        OCI_CLI_KEY_FILE = credentials('oci-api-key')
+        OCI_CLI_REGION = "${params.OKE_CLUSTER_REGION}"
+        OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING = 'True'
+        INSTALL_CONFIG_FILE_OCIDNS = "${GO_REPO_PATH}/verrazzano/tests/e2e/config/scripts/install-verrazzano-ocidns.yaml"
+        INSTALL_CONFIG_FILE_XIPIO = "${GO_REPO_PATH}/verrazzano/tests/e2e/config/scripts/install-verrazzano-xipio.yaml"
+        OCI_DNS_ZONE_SUFFIX=credentials('oci-dns-zone')
+        OCI_DNS_ZONE_NAME="z${zoneId}." + "${OCI_DNS_ZONE_SUFFIX}"
+        VZ_ENVIRONMENT_NAME = "${params.TEST_ENV == 'ocidns_oke' ? 'b' + env.BUILD_NUMBER : 'default'}"
+        TIMESTAMP = sh(returnStdout: true, script: "date +%Y%m%d%H%M%S").trim()
+        TEST_SCRIPTS_DIR = "${GO_REPO_PATH}/verrazzano/tests/e2e/config/scripts"
+    }
+
+    stages {
+        stage('Clean workspace and checkout') {
+            steps {
+                sh """
+                    echo "${NODE_LABELS}"
+                """
+
+                script {
+                    checkout scm
+                }
+                sh """
+                    cp -f "${NETRC_FILE}" $HOME/.netrc
+                    chmod 600 $HOME/.netrc
+                """
+
+                script {
+                    try {
+                        sh """
+                            echo "${DOCKER_CREDS_PSW}" | docker login ${env.DOCKER_REPO} -u ${DOCKER_CREDS_USR} --password-stdin
+                        """
+                    } catch(error) {
+                        echo "docker login failed, retrying after sleep"
+                        retry(4) {
+                            sleep(30)
+                            sh """
+                                echo "${DOCKER_CREDS_PSW}" | docker login ${env.DOCKER_REPO} -u ${DOCKER_CREDS_USR} --password-stdin
+                            """
+		                }
+		            }
+	            }
+                script {
+	                try {
+		                sh """
+                            echo "${OCR_CREDS_PSW}" | docker login -u ${OCR_CREDS_USR} ${OCR_REPO} --password-stdin
+		                """
+		            } catch(error) {
+		                echo "OCR docker login failed, retrying after sleep"
+		                retry(4) {
+			                sleep(30)
+			                sh """
+                                echo "${OCR_CREDS_PSW}" | docker login -u ${OCR_CREDS_USR} ${OCR_REPO} --password-stdin
+			                """
+		                }
+		            }
+	            }
+                sh """
+                    rm -rf ${GO_REPO_PATH}/verrazzano
+                    mkdir -p ${GO_REPO_PATH}/verrazzano
+                    tar cf - . | (cd ${GO_REPO_PATH}/verrazzano/ ; tar xf -)
+                """
+
+                script {
+                    def props = readProperties file: '.verrazzano-development-version'
+                    VERRAZZANO_DEV_VERSION = props['verrazzano-development-version']
+                    TIMESTAMP = sh(returnStdout: true, script: "date +%Y%m%d%H%M%S").trim()
+                    SHORT_COMMIT_HASH = sh(returnStdout: true, script: "git rev-parse --short HEAD").trim()
+                    DOCKER_IMAGE_TAG = "${VERRAZZANO_DEV_VERSION}-${TIMESTAMP}-${SHORT_COMMIT_HASH}"
+                }
+            }
+        }
+
+        stage('Acceptance Tests') {
+            when {
+                allOf {
+                    not { buildingTag() }
+                    anyOf {
+                        branch 'master';
+                        branch 'develop';
+                        expression {SKIP_ACCEPTANCE_TESTS == false};
+                    }
+                }
+            }
+
+            stages {
+                stage('Prepare AT environment') {
+                    stages {
+                        stage('Create Cluster') {
+                            steps {
+                                script {
+                                    clusterCount = params.TOTAL_CLUSTERS as Integer
+                                    sh """
+                                        mkdir -p ${KUBECONFIG_DIR}
+                                        if [ "${env.TEST_ENV}" == "kind" ]
+                                        then
+                                            echo "Create Kind cluster"
+                                            for((count=0; count<=clusterCount; ++count)) do
+                                              echo ${CLUSTER_NAME_PREFIX}-$count
+                                              echo ${KUBECONFIG_DIR}/$count/kube_config
+                                            done
+                                        else
+					                        echo "Create OKE cluster"
+                                        fi
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            sh """
+                if [ "${TEST_ENV}" == "kind" ]; then
+                  echo "Delete KIND cluster"
+                  #cd ${GO_REPO_PATH}/verrazzano/platform-operator
+                  # make delete-cluster
+                else
+                  echo "Delete OKE cluster"
+                fi
+            """
+            deleteDir()
+        }
+    }
+}
