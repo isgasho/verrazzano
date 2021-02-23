@@ -10,7 +10,6 @@ import (
 	"github.com/verrazzano/verrazzano/tests/e2e/pkg/vmi"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -74,11 +73,9 @@ var _ = ginkgo.BeforeSuite(func() {
 		ginkgo.Fail(fmt.Sprintf("Error retrieving system VMI ingress URLs: %v", err))
 	}
 
-	if len(os.Getenv("TEST_KUBECONFIG")) == 0 {
-		vmiCRD, err = verrazzanoMonitoringInstanceCRD()
-		if err != nil {
-			ginkgo.Fail(fmt.Sprintf("Error retrieving system VMI CRD: %v", err))
-		}
+	vmiCRD, err = verrazzanoMonitoringInstanceCRD()
+	if err != nil {
+		ginkgo.Fail(fmt.Sprintf("Error retrieving system VMI CRD: %v", err))
 	}
 
 	creds, err = pkg.GetSystemVMICredentials()
@@ -93,11 +90,7 @@ var _ = ginkgo.BeforeSuite(func() {
 var _ = ginkgo.Describe("VMI", func() {
 
 	ginkgo.It("api server should be accessible", func() {
-		if len(os.Getenv("TEST_KUBECONFIG")) > 0 {
-			gomega.Expect(true).Should(gomega.BeTrue())
-		} else {
-			assertIngressURL("vmi-system-api")
-		}
+		assertIngressURL("vmi-system-api")
 	})
 
 	ginkgo.It("Elasticsearch endpoint should be accessible", func() {
@@ -107,9 +100,7 @@ var _ = ginkgo.Describe("VMI", func() {
 		gomega.Eventually(elasticPodsRunning, waitTimeout, pollingInterval).Should(gomega.BeTrue(), "pods did not all show up")
 		gomega.Eventually(elasticTlsSecret, elasticWaitTimeout, elasticPollingInterval).Should(gomega.BeTrue(), "tls-secret did not show up")
 		gomega.Eventually(elasticCertificate, elasticWaitTimeout, elasticPollingInterval).Should(gomega.BeTrue(), "certificate did not show up")
-		if len(os.Getenv("TEST_KUBECONFIG")) == 0 {
-			gomega.Eventually(elasticIngress, elasticWaitTimeout, elasticPollingInterval).Should(gomega.BeTrue(), "ingress did not show up")
-		}
+		gomega.Eventually(elasticIngress, elasticWaitTimeout, elasticPollingInterval).Should(gomega.BeTrue(), "ingress did not show up")
 		pkg.Concurrently(
 			func() {
 				gomega.Eventually(elasticConnected, elasticWaitTimeout, elasticPollingInterval).Should(gomega.BeTrue(), "never connected")
@@ -166,9 +157,7 @@ var _ = ginkgo.Describe("VMI", func() {
 	})
 
 	ginkgo.It("Prometheus push gateway should be accessible", func() {
-		if len(os.Getenv("TEST_KUBECONFIG")) == 0 {
-			assertIngressURL("vmi-system-prometheus-gw")
-		}
+		assertIngressURL("vmi-system-prometheus-gw")
 	})
 
 	ginkgo.It("Grafana endpoint should be accessible", func() {
