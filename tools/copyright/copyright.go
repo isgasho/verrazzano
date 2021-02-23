@@ -183,6 +183,9 @@ func main() {
 				}
 				if info.IsDir() {
 					if skipOrIgnoreDir(info.Name(), path) {
+						if verbose {
+							fmt.Printf("Skipping directory %s and all its contents\n", path)
+						}
 						return filepath.SkipDir
 					}
 					return nil
@@ -207,9 +210,6 @@ func main() {
 // skipOrIgnoreDir Returns true if a directory matches the skip or ignore lists
 func skipOrIgnoreDir(relativeName string, path string) bool {
 	if contains(directoriesToSkip, relativeName) || contains(directoriesToIgnore, path) {
-		if verbose {
-			fmt.Println(fmt.Sprintf("Ignoring %s", path))
-		}
 		numDirectoriesSkipped++
 		return true
 	}
@@ -227,15 +227,18 @@ func checkFile(path string, info os.FileInfo) error {
 		contains(filesToIgnore, path)  {
 		numFilesSkipped++
 		if verbose {
-			fmt.Println(fmt.Sprintf("Ignoring %s", path))
+			fmt.Println(fmt.Sprintf("Skipping file %s", path))
 		}
 		return nil
 	}
 
-	numFilesAnalyzed++
 	fileErrors, err := hasValidCopyright(path)
 	if err != nil {
 		return err
+	}
+	numFilesAnalyzed++
+	if verbose {
+		fmt.Printf("Scanning %s\n", path)
 	}
 	if len(fileErrors) > 0 {
 		filesWithErrors[path] = fileErrors

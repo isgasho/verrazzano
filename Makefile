@@ -44,13 +44,13 @@ test-platform-operator-install-logs:
 
 .PHONY: copyright-check
 copyright-check:
-	go run tools/copyright/copyright.go .
+	go run tools/copyright/copyright.go --verbose .
 
 .PHONY: copyright-check-local-changes
 copyright-check-local-changes:
-	go run tools/copyright/copyright.go --enforce-current  $(shell git status --short | cut -c 4-)
+	go run tools/copyright/copyright.go --verbose --enforce-current  $(shell git status --short | cut -c 4-)
 
 .PHONY: copyright-check-branch-changes
 copyright-check-branch-changes:
-	go run tools/copyright/copyright.go --enforce-current --verbose $(shell git diff --name-only --oneline ${PARENT_BRANCH} --)
+	go run tools/copyright/copyright.go --verbose --enforce-current $(shell git diff --name-only --oneline ${PARENT_BRANCH} --)
 
