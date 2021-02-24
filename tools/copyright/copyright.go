@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2021, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 package main
 
@@ -24,8 +24,8 @@ import (
 // to explicitly ignore.
 
 const (
-	// ignoreFileName is the name of the special file that contains a list of files to ignore
-	ignoreFileName = "ignore_copyright_check.txt"
+	// ignoreFileDefaultName is the name of the special file that contains a list of files to ignore
+	ignoreFileDefaultName = "ignore_copyright_check.txt"
 
 	// maxLines is the maximum number of lines to read in a file before giving up
 	maxLines = 5
@@ -34,14 +34,14 @@ const (
 var (
 	// filesToSkip is a list of well-known filenames to skip while scanning, relative to the directory being scanned
 	filesToSkip = []string{
-			".gitlab-ci.yml",
-			"go.mod",
-			"go.sum",
-			"LICENSE",
-			"LICENSE.txt",
-			"THIRD_PARTY_LICENSES.txt",
-			"coverage.html",
-			"clair-scanner",
+		".gitlab-ci.yml",
+		"go.mod",
+		"go.sum",
+		"LICENSE",
+		"LICENSE.txt",
+		"THIRD_PARTY_LICENSES.txt",
+		"coverage.html",
+		"clair-scanner",
 	}
 
 	// directoriesToShip is a list of well-known (sub)directories to skip while scanning, relative to the working
@@ -150,22 +150,27 @@ func main() {
 		os.Exit(0)
 	}
 
-	args := flag.Args()
+	os.Exit(runScan(flag.Args()))
+}
+
+func runScan(args []string) int {
+
 	if len(args) < 1 {
-		fmt.Println("\nNo pathnames provided for scan, exiting.\n")
+		fmt.Printf("\nNo pathnames provided for scan, exiting.\n")
 		printUsage()
-		os.Exit(1)
+		return 1
 	}
 
+	year, _, _ := time.Now().Date()
+	currentYear = strconv.Itoa(year) + ", "
+
 	if enforceCurrentYear {
-		year, _, _ := time.Now().Date()
-		currentYear = strconv.Itoa(year) + ", "
 		fmt.Println("Enforcing current year in copyright string")
 	}
 
 	if err := loadIgnoreFile(); err != nil {
-		fmt.Print("Error updating ingore files list: %v", err)
-		os.Exit(1)
+		fmt.Printf("Error updating ingore files list: %v\n", err)
+		return 1
 	}
 
 	filesWithErrors = make(map[string][]string, 10)
@@ -182,7 +187,7 @@ func main() {
 				continue
 			}
 			fmt.Printf("Error getting file info for %s: %v", arg, err.Error())
-			os.Exit(1)
+			return 1
 		}
 		if argInfo.IsDir() {
 			err = filepath.Walk(arg, func(path string, info os.FileInfo, err error) error {
@@ -209,10 +214,11 @@ func main() {
 		}
 		if err != nil {
 			fmt.Printf("Error processing %s: %v", arg, err.Error())
-			os.Exit(1)
+			return 1
 		}
 	}
 	printScanReport()
+	return 0
 }
 
 // skipOrIgnoreDir Returns true if a directory matches the skip or ignore lists
@@ -232,7 +238,7 @@ func checkFile(path string, info os.FileInfo) error {
 	// - it is in the global ignores list read from disk
 	if contains(extensionsToSkip, filepath.Ext(info.Name())) ||
 		contains(filesToSkip, info.Name()) ||
-		contains(filesToIgnore, path)  {
+		contains(filesToIgnore, path) {
 		numFilesSkipped++
 		if verbose {
 			fmt.Println(fmt.Sprintf("Skipping file %s", path))
@@ -240,7 +246,7 @@ func checkFile(path string, info os.FileInfo) error {
 		return nil
 	}
 
-	fileErrors, err := hasValidCopyright(path)
+	fileErrors, err := checkCopyrightAndLicense(path)
 	if err != nil {
 		return err
 	}
@@ -254,8 +260,8 @@ func checkFile(path string, info os.FileInfo) error {
 	return nil
 }
 
-// hasValidCopyright returns true if the file has a valid/correct copyright notice
-func hasValidCopyright(path string) (fileErrors[]string,  err error) {
+// checkCopyrightAndLicense returns true if the file has a valid/correct copyright notice
+func checkCopyrightAndLicense(path string) (fileErrors []string, err error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return fileErrors, err
@@ -273,7 +279,7 @@ func hasValidCopyright(path string) (fileErrors[]string,  err error) {
 		if copyrightRegex.MatchString(line) {
 			foundCopyright = true
 			if enforceCurrentYear && !strings.Contains(line, currentYear) {
-				fileErrors = append(fileErrors,"Copyright does not contain current year")
+				fileErrors = append(fileErrors, "Copyright does not contain current year")
 			}
 		}
 		if uplRegex.MatchString(line) {
@@ -285,20 +291,20 @@ func hasValidCopyright(path string) (fileErrors[]string,  err error) {
 		linesRead++
 	}
 	if !foundCopyright {
-		fileErrors = append(fileErrors,"Copyright not found")
+		fileErrors = append(fileErrors, "Copyright not found")
 	}
 	if !foundLicense {
-		fileErrors = append(fileErrors,"License not found")
+		fileErrors = append(fileErrors, "License not found")
 	}
 	return fileErrors, nil
 }
 
 func printScanReport() {
 	fmt.Printf("\nResults of scan:\n\tFiles analyzed: %d\n\tFiles with error: %d\n\tFiles skipped: %d\n\tDirectories skipped: %d\n",
-	 numFilesAnalyzed, len(filesWithErrors), numFilesSkipped, numDirectoriesSkipped);
+		numFilesAnalyzed, len(filesWithErrors), numFilesSkipped, numDirectoriesSkipped)
 
 	if len(filesWithErrors) > 0 {
-		fmt.Println("\nThe following files have errors:\n")
+		fmt.Printf("\nThe following files have errors:\n")
 		for path, errors := range filesWithErrors {
 			buff := new(bytes.Buffer)
 			writer := csv.NewWriter(buff)
@@ -325,6 +331,11 @@ func printScanReport() {
 }
 
 func loadIgnoreFile() error {
+	ignoreFileName := os.Getenv("COPYRIGHT_INGOREFILE_PATH")
+	if len(ignoreFileName) == 0 {
+		ignoreFileName = ignoreFileDefaultName
+	}
+
 	ignoreFile, err := os.Open(ignoreFileName)
 	if err != nil {
 		return err
@@ -379,7 +390,7 @@ func contains(strings []string, value string) bool {
 }
 
 func printUsage() {
-	usageString :=`
+	usageString := `
 
 go run copyright.go [options] path1 [path2 path3 ...]
 

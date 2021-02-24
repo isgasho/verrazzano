@@ -18,6 +18,9 @@ VERRAZZANO_APPLICATION_OPERATOR_IMAGE_NAME ?= verrazzano-application-operator-de
 VERRAZZANO_PLATFORM_OPERATOR_IMAGE = ${DOCKER_REPO}/${DOCKER_NAMESPACE}/${VERRAZZANO_PLATFORM_OPERATOR_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 VERRAZZANO_APPLICATION_OPERATOR_IMAGE = ${DOCKER_REPO}/${DOCKER_NAMESPACE}/${VERRAZZANO_APPLICATION_OPERATOR_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
 
+CURRENT_YEAR = $(shell date +"%Y")
+MODIFIED_FILES_THIS_YEAR = $(shell git diff --name-only "@{${CURRENT_YEAR}-01-01}" "@{now}")
+
 PARENT_BRANCH ?= origin/master
 
 .PHONY: docker-push
@@ -42,9 +45,15 @@ test-platform-operator-remove:
 test-platform-operator-install-logs:
 	kubectl logs -f -n default $(shell kubectl get pods -n default --no-headers | grep "^verrazzano-install-" | cut -d ' ' -f 1)
 
+.PHONY: copyright-test
+copyright-test:
+	(cd tools/copyright; go test .)
+
 .PHONY: copyright-check
-copyright-check:
+copyright-check: copyright-test
 	go run tools/copyright/copyright.go --verbose .
+	go run tools/copyright/copyright.go --verbose --enforce-current ${MODIFIED_FILES_THIS_YEAR}
+
 
 .PHONY: copyright-check-local
 copyright-check-local:
@@ -52,5 +61,4 @@ copyright-check-local:
 
 .PHONY: copyright-check-branch
 copyright-check-branch:
-	go run tools/copyright/copyright.go --verbose --enforce-current $(shell git diff --name-only --oneline ${PARENT_BRANCH} --)
-
+	go run tools/copyright/copyright.go --verbose --enforce-current $(shell git diff --name-only ${PARENT_BRANCH})

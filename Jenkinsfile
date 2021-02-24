@@ -59,9 +59,6 @@ pipeline {
 
         WEBLOGIC_PSW = credentials('weblogic-example-domain-password') // Needed by ToDoList example test
         DATABASE_PSW = credentials('todo-mysql-password') // Needed by ToDoList example test
-
-        //COPYRIGHT_SCAN_TARGET = "${env.BRANCH_NAME == 'master' ? 'copyright-check' : 'copyright-check-branch-changes'}"
-        COPYRIGHT_SCAN_TARGET = "copyright-check"
     }
 
     stages {
@@ -206,7 +203,7 @@ pipeline {
 
                     echo "copyright scan"
                     cd ${GO_REPO_PATH}/verrazzano
-                    make ${COPYRIGHT_SCAN_TARGET}
+                    time make copyright-check
                 """
 
                 dir('platform-operator'){
