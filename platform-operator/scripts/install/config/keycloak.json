@@ -871,7 +871,7 @@
     ],
     "webOrigins": [
       "https://verrazzano.ENV_NAME.DNS_SUFFIX",
-      "https://elasticsearch.vmi.system.ENV_NAME.DNS_SUFFIX",
+      "https://elasticsearch.vmi.system.ENV_NAME.DNS_SUFFIX"
     ],
     "notBefore": 0,
     "bearerOnly": false,
